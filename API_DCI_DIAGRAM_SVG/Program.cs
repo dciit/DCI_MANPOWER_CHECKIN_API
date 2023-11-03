@@ -9,6 +9,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DBSCM>();
 builder.Services.AddDbContext<DBDCI>();
+builder.Services.AddDbContext<HRMContext>();
+builder.Services.AddDbContext<ManpowerContext>();
 builder.Services.AddCors(options => options.AddPolicy("Cors", builder =>
 {
     builder

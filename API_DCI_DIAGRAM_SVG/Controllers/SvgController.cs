@@ -2,17 +2,25 @@
 using API_DCI_DIAGRAM_SVG.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using static API_DCI_DIAGRAM_SVG.Models.MParameter;
 
 namespace API_DCI_DIAGRAM_SVG.Controllers
 {
     public class SvgController : Controller
     {
         private readonly DBDCI _contextDCI;
+        private readonly ManpowerContext _contxMP; 
+        private readonly HRMContext _contxHRM;
 
-        public SvgController(DBDCI contextDCI)
+        public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM)
         {
             _contextDCI = contextDCI;
+            _contxMP = contxMP;
+            _contxHRM = contxHRM;
         }
 
         [HttpGet]
@@ -531,6 +539,55 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 status = res
             });
+        }
+
+
+
+        [HttpPost]
+        [Route("/mpck/getobjectlist/")]
+        public IActionResult GetObjectList([FromBody] MParamLayout param)
+        {
+var oObjects = _contxMP.ViMpckObjectList.Where( o => o.LayoutStatus == "TRUE" && o.LayoutCode == param.LayoutCode ).ToList();
+
+            var oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
+                            && (o.Odate == param.dataDate || o.Odate == param.dataDate.AddDays(1))
+                            && (o.Rq == param.dataDate.Day.ToString() || o.Rq == $"{param.dataDate.Day.ToString()}0")  ).ToList();
+
+            var result = from obj in oObjects
+                          join ot in oEmpOTs
+                          on obj.EmpCode equals ot.Code into d2 from f in d2.DefaultIfEmpty()
+                          select new
+                          {
+                              obj.ObjCode,
+                              obj.LayoutCode,
+                              obj.ObjMasterId,
+                              obj.ObjType,
+                              obj.ObjTitle,
+                              obj.ObjSubtitle,
+                              obj.ObjPath,
+                              obj.ObjX,
+                              obj.ObjY,
+                              obj.ObjStatus,
+                              obj.EmpCode,
+                              obj.ObjLastCheckDt,
+                              obj.LayoutName,
+                              obj.LayoutSubName,
+                              obj.Factory,
+                              obj.Line,
+                              obj.SubLine,
+                              obj.LayoutStatus,
+                              obj.BypassMq,
+                              obj.BypassSa,
+                              obj.Mq ,
+                              obj.Sa ,
+                              Ot = (obj.EmpCode == "TRUE") ? (f.Code == null) ? "FALSE" : "TRUE" : "FALSE",
+                              obj.EmpImage
+                          };
+
+
+
+            return Ok(result);
+            
         }
 
     }
