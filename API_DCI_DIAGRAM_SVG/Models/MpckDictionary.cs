@@ -35,5 +35,8 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [Column("Dict_RefSubName")]
         [StringLength(250)]
         public string? DictRefSubName { get; set; }
+        [Column("Dict_RefCode2")]
+        [StringLength(50)]
+        public string? DictRefCode2 { get; set; }
     }
 }

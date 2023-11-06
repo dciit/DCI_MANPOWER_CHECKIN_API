@@ -17,12 +17,16 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
         {
         }
 
+
+        public virtual DbSet<DcrunNbr> DcrunNbr { get; set; } = null!;
         public virtual DbSet<MpckCheckInLog> MpckCheckInLog { get; set; } = null!;
         public virtual DbSet<MpckDictionary> MpckDictionary { get; set; } = null!;
         public virtual DbSet<MpckLayout> MpckLayout { get; set; } = null!;
         public virtual DbSet<MpckObject> MpckObject { get; set; } = null!;
+        public virtual DbSet<MpckObjectMaster> MpckObjectMaster { get; set; } = null!;
         public virtual DbSet<ViMpckDictionary> ViMpckDictionary { get; set; } = null!;
         public virtual DbSet<ViMpckObjectList> ViMpckObjectList { get; set; } = null!;
+        public virtual DbSet<SpDCRunNbr> SpDCRunNbr { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -42,6 +46,17 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
                 entity.HasKey(e => new { e.DictType, e.DictCode, e.DictRefCode });
             });
 
+            modelBuilder.Entity<MpckLayout>(entity =>
+            {
+                entity.Property(e => e.UpdateDate).HasComment("CURRENT_TIMESTAMP");
+            });
+
+            modelBuilder.Entity<MpckObjectMaster>(entity =>
+            {
+                entity.HasKey(e => e.ObjMasterId)
+                    .HasName("PK_LNS_OBJECT_MASTER");
+            });
+
             modelBuilder.Entity<ViMpckDictionary>(entity =>
             {
                 entity.ToView("vi_MPCK_Dictionary");
@@ -50,6 +65,11 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
             modelBuilder.Entity<ViMpckObjectList>(entity =>
             {
                 entity.ToView("vi_MPCK_ObjectList");
+            });
+
+            modelBuilder.Entity<SpDCRunNbr>(entity =>
+            {
+                entity.HasNoKey();
             });
 
             OnModelCreatingPartial(modelBuilder);

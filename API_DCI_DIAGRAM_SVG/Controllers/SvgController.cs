@@ -7,6 +7,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using static API_DCI_DIAGRAM_SVG.Models.MParameter;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Channels;
+using Microsoft.Data.SqlClient;
 
 namespace API_DCI_DIAGRAM_SVG.Controllers
 {
@@ -15,6 +18,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         private readonly DBDCI _contextDCI;
         private readonly ManpowerContext _contxMP; 
         private readonly HRMContext _contxHRM;
+        ClsHelper oHelper = new ClsHelper();
 
         public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM)
         {
@@ -544,16 +548,16 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
 
         [HttpPost]
-        [Route("/mpck/getobjectlist/")]
-        public IActionResult GetObjectList([FromBody] MParamLayout param)
+        [Route("/mpck/getobjectlist")]
+        public IActionResult GetObjectList([FromBody] MParamLayoutInfo param)
         {
-var oObjects = _contxMP.ViMpckObjectList.Where( o => o.LayoutStatus == "TRUE" && o.LayoutCode == param.LayoutCode ).ToList();
+            var oObjects = _contxMP.ViMpckObjectList.Where( o => o.LayoutStatus == "TRUE" && o.LayoutCode == param.LayoutCode ).ToList();
 
             var oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
                             && (o.Odate == param.dataDate || o.Odate == param.dataDate.AddDays(1))
                             && (o.Rq == param.dataDate.Day.ToString() || o.Rq == $"{param.dataDate.Day.ToString()}0")  ).ToList();
 
-            var result = from obj in oObjects
+            var result = from obj in oObjects.OrderByDescending(b => b.ObjCode)
                           join ot in oEmpOTs
                           on obj.EmpCode equals ot.Code into d2 from f in d2.DefaultIfEmpty()
                           select new
@@ -589,6 +593,208 @@ var oObjects = _contxMP.ViMpckObjectList.Where( o => o.LayoutStatus == "TRUE" &&
             return Ok(result);
             
         }
+
+        [HttpPost]
+        [Route("/mpck/addMaster")]
+        public IActionResult AddMaster([FromBody] MpckObjectMaster param)
+        {
+            List<MpckObjectMaster> oMasters = _contxMP.MpckObjectMaster.Where(m => m.ObjMasterId == param.ObjMasterId).ToList();
+
+            if (oMasters.Count == 0)
+            {
+                _contxMP.MpckObjectMaster.Add(param);
+                _contxMP.Entry(param).State = EntityState.Added;
+                int res = _contxMP.SaveChanges();
+
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+        }
+
+
+        [HttpPost]
+        [Route("/mpck/editMaster")]
+        public IActionResult EditMaster([FromBody] MpckObjectMaster param)
+        {
+            List<MpckObjectMaster> oMasters = _contxMP.MpckObjectMaster.Where(m => m.ObjMasterId == param.ObjMasterId).ToList();
+
+            if (oMasters.Count == 0)
+            {
+                
+                _contxMP.MpckObjectMaster.Add(param);
+                _contxMP.Entry(param).State = EntityState.Modified;
+                int res = _contxMP.SaveChanges();
+
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+        }
+
+        [HttpPost]
+        [Route("/mpck/deleteMaster")]
+        public IActionResult DeleteMaster([FromBody] MpckObjectMaster param)
+        {
+            List<MpckObjectMaster> oMasters = _contxMP.MpckObjectMaster.Where(m => m.ObjMasterId == param.ObjMasterId).ToList();
+
+            if (oMasters.Count == 0)
+            {
+
+                _contxMP.MpckObjectMaster.Add(param);
+                _contxMP.Entry(param).State = EntityState.Deleted;
+                int res = _contxMP.SaveChanges();
+
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+        }
+
+
+
+
+
+        [HttpPost]
+        [Route("/mpck/addObject")]
+        public IActionResult AddObject([FromBody] MParamObjectAddInfo param)
+        {
+            //string dockey = (param.ObjType == "MP") ? "MPCK_OBJECT_MP" : "MPCK_OBJECT_OTH";
+            string dockey = "MPCK_OBJECT_MP";
+            SpDCRunNbr nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"[dbo].[sp_DCRunNbr] @DocKey", new SqlParameter("@DocKey", "MPCK_OBJECT_MP")).First();
+
+            //string nbr = _contxMP.Database.From($"[dbo].[sp_DCRunNbr] @DocKey={dockey}");
+            //_contxMP.SpDCRunNbr.FromSqlRaw(dockey);
+
+
+            //return context?.Students?.FromSqlRaw("FindStudents @searchFor", new SqlParameter("@searchFor", searchFor)).ToList();
+
+            MpckObject mObj = new MpckObject();
+            mObj.ObjCode = nbr.RunNbr;
+            mObj.LayoutCode = param.LayoutCode;
+            mObj.ObjMasterId = param.ObjMasterId;
+            mObj.ObjType = param.ObjType;
+            mObj.ObjTitle = param.ObjTitle;
+            mObj.ObjSubtitle = param.ObjSubtitle;
+            mObj.ObjPath = "";
+            mObj.ObjX = param.ObjX;
+            mObj.ObjY = param.ObjY;
+            mObj.ObjStatus = "";
+            mObj.EmpCode = "";
+            mObj.ObjLastCheckDt = DateTime.Now;
+
+            _contxMP.MpckObject.Add(mObj);
+            _contxMP.Entry(mObj).State = EntityState.Added;
+            int res = _contxMP.SaveChanges();
+
+            return Ok(new { status = res });
+        }
+
+        [HttpPost]
+        [Route("/mpck/deleteObject")]
+        public IActionResult DeleteObject([FromBody] MParamObjectCodeInfo param)
+        {
+
+            List<MpckObject> oObjects = _contxMP.MpckObject.Where( o => o.ObjCode == param.ObjCode).ToList();
+
+            if(oObjects.Count > 0)
+            {
+                MpckObject oObject = oObjects[0];
+
+                _contxMP.MpckObject.Add(oObject);
+                _contxMP.Entry(oObject).State = EntityState.Deleted;
+                int res = _contxMP.SaveChanges();
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+
+
+        }
+
+
+        [HttpPost]
+        [Route("/mpck/addLayout")]
+        public IActionResult AddLayout([FromBody] MpckLayout param)
+        {
+            List<MpckLayout> oLayouts = _contxMP.MpckLayout.Where( l => l.LayoutCode == param.LayoutCode).ToList();
+
+            if(oLayouts.Count == 0)
+            {
+                _contxMP.MpckLayout.Add(param);
+                _contxMP.Entry(param).State = EntityState.Added;
+                int res = _contxMP.SaveChanges();
+
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "error" });
+            }
+        }
+
+
+        [HttpPost]
+        [Route("/mpck/editObjectTitle")]
+        public IActionResult EditTitleObject([FromBody] MParamObjectEditTitleInfo param)
+        {
+            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+
+            if(oObjs.Count > 0)
+            {
+                MpckObject oObjUpd = oObjs[0];
+                oObjUpd.ObjTitle = param.ObjTitle;
+                oObjUpd.ObjSubtitle = param.ObjSubtitle;
+
+                _contxMP.MpckObject.Attach(oObjUpd);
+                _contxMP.Entry(oObjUpd).State = EntityState.Modified;
+                int changed = _contxMP.SaveChanges();
+
+                return Ok(new { status = changed });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+        }
+
+
+        [HttpPost]
+        [Route("/mpck/editObjectPosition")]
+        public IActionResult EditPositionObject([FromBody] MParamObjectEditXYInfo param)
+        {
+            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+
+            if (oObjs.Count > 0)
+            {
+                MpckObject oObjUpd = oObjs[0];
+                oObjUpd.ObjX = param.ObjX;
+                oObjUpd.ObjY = param.ObjY;
+
+                _contxMP.MpckObject.Attach(oObjUpd);
+                _contxMP.Entry(oObjUpd).State = EntityState.Modified;
+                int changed = _contxMP.SaveChanges();
+
+                return (changed == 1) ? Ok(new { status = "updated" }) : Ok(new { status = $"not update ({changed})" });
+            }
+            else
+            {
+                return BadRequest(new { status = "no data" });
+            }
+        }
+
+
+
+
+
 
     }
 }

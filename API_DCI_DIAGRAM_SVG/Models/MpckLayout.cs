@@ -11,11 +11,11 @@ namespace API_DCI_DIAGRAM_SVG.Models
     public partial class MpckLayout
     {
         [Key]
-        [StringLength(50)]
+        [StringLength(20)]
         public string LayoutCode { get; set; } = null!;
         [StringLength(50)]
         public string? LayoutName { get; set; }
-        [StringLength(50)]
+        [StringLength(100)]
         public string? LayoutSubName { get; set; }
         [StringLength(10)]
         public string? Factory { get; set; }
@@ -31,8 +31,11 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [Column("BypassSA")]
         [StringLength(10)]
         public string? BypassSa { get; set; }
-        [StringLength(50)]
+        [StringLength(5)]
         public string? UpdateBy { get; set; }
+        /// <summary>
+        /// CURRENT_TIMESTAMP
+        /// </summary>
         [Column(TypeName = "datetime")]
         public DateTime? UpdateDate { get; set; }
     }

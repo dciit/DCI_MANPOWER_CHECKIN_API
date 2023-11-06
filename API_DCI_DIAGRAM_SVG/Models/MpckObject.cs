@@ -15,35 +15,32 @@ namespace API_DCI_DIAGRAM_SVG.Models
     {
         [Key]
         [Column("Obj_Code")]
-        [StringLength(50)]
+        [StringLength(20)]
         public string ObjCode { get; set; } = null!;
-        [StringLength(50)]
+        [StringLength(20)]
         public string? LayoutCode { get; set; }
         [Column("Obj_MasterID")]
-        [StringLength(50)]
+        [StringLength(20)]
         public string? ObjMasterId { get; set; }
         [Column("Obj_Type")]
-        [StringLength(50)]
+        [StringLength(10)]
         public string? ObjType { get; set; }
         [Column("Obj_Title")]
         [StringLength(50)]
         public string? ObjTitle { get; set; }
         [Column("Obj_Subtitle")]
-        [StringLength(50)]
+        [StringLength(200)]
         public string? ObjSubtitle { get; set; }
-        [Column("Obj_Path")]
-        [StringLength(50)]
+        [Column("Obj_Path", TypeName = "text")]
         public string? ObjPath { get; set; }
         [Column("Obj_X")]
-        [StringLength(10)]
-        public string? ObjX { get; set; }
+        public double? ObjX { get; set; }
         [Column("Obj_Y")]
-        [StringLength(10)]
-        public string? ObjY { get; set; }
+        public double? ObjY { get; set; }
         [Column("Obj_Status")]
         [StringLength(10)]
         public string? ObjStatus { get; set; }
-        [StringLength(10)]
+        [StringLength(5)]
         public string? EmpCode { get; set; }
         [Column("Obj_LastCheckDT", TypeName = "datetime")]
         public DateTime? ObjLastCheckDt { get; set; }

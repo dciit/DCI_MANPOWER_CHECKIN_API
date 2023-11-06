@@ -15,21 +15,18 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [StringLength(50)]
         public string Nbr { get; set; } = null!;
         [Column("Obj_Code")]
-        [StringLength(50)]
+        [StringLength(20)]
         public string? ObjCode { get; set; }
-        [StringLength(10)]
+        [StringLength(5)]
         public string? EmpCode { get; set; }
         [Column("CKDate")]
-        [StringLength(50)]
+        [StringLength(8)]
         public string? Ckdate { get; set; }
-        [Column("CKTime")]
-        [StringLength(50)]
-        public string? Cktime { get; set; }
         [Column("CKShift")]
-        [StringLength(10)]
+        [StringLength(5)]
         public string? Ckshift { get; set; }
         [Column("CKType")]
-        [StringLength(50)]
+        [StringLength(10)]
         public string? Cktype { get; set; }
         [Column("CKDateTime", TypeName = "datetime")]
         public DateTime? CkdateTime { get; set; }

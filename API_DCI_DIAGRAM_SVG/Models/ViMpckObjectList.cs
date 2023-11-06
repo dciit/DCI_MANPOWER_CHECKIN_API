@@ -61,20 +61,18 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [StringLength(10)]
         public string? BypassSa { get; set; }
         [Column("OT")]
-        [StringLength(10)]
+        [StringLength(5)]
         [Unicode(false)]
         public string Ot { get; set; } = null!;
         [Column("MQ")]
-        [StringLength(10)]
+        [StringLength(5)]
         [Unicode(false)]
         public string Mq { get; set; } = null!;
         [Column("SA")]
-        [StringLength(10)]
+        [StringLength(5)]
         [Unicode(false)]
         public string Sa { get; set; } = null!;
-        [Column("EmpImage")]
-        [StringLength(200)]
-        [Unicode(false)]
+        [StringLength(51)]
         public string EmpImage { get; set; } = null!;
     }
 }
