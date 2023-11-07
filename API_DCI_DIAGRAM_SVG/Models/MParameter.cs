@@ -10,6 +10,7 @@ namespace API_DCI_DIAGRAM_SVG.Models
             public DateTime dataDate { get; set; }
             public string dataShift { get; set; }
         }
+        
 
         public class MParamObjectAddInfo
         {
@@ -32,15 +33,18 @@ namespace API_DCI_DIAGRAM_SVG.Models
             public string ObjCode { get; set; }
         }
 
+        public class MParamObjectStatusInfo
+        {
+            public string ObjCode { get; set; }
+            public string ObjStatus { get; set; }
+        }
+
         public class MParamObjectEditXYInfo
         {
             public string ObjCode { get; set; }
             public double ObjX { get; set; }
             public double ObjY { get; set; }
 
-            //public string ObjStatus
-            //EmpCode
-            //ObjLastCheckDt
         }
 
         public class MParamObjectEditTitleInfo
@@ -58,6 +62,23 @@ namespace API_DCI_DIAGRAM_SVG.Models
             public string Ckshift { get; set; }
             public string Cktype { get; set; }
             
+        }
+
+        public class MParamDictInfo
+        {
+            public string ObjCode { get; set; }
+            public string LayOutCode { get; set; }
+            public string DictCode { get; set; }
+            public string DictType { get; set; }
+            public string EmpCode { get; set; }
+
+        }
+
+        public class MParamDictSearchInfo
+        {
+            public string SearchCode { get; set; }            
+            public string SearchType { get; set; }
+
         }
 
     }

@@ -10,6 +10,7 @@ using static API_DCI_DIAGRAM_SVG.Models.MParameter;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Channels;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace API_DCI_DIAGRAM_SVG.Controllers
 {
@@ -31,7 +32,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/master/equipment")]
         public IActionResult masterEquipment()
         {
-            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjW == 0 && x.ObjH == 0).OrderByDescending(x => x.ObjId).ToList();
+            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjW == 0 && x.ObjH == 0).OrderByDescending(x => x.ObjId).ToList();
             return Ok(content);
         }
 
@@ -45,7 +46,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             //DateTime.Now.ToString("yyyy-MM-dd") + " 08:00:00     ====>  "
             DateTime dtStart = DateTime.Parse(DateTime.Now.ToString() + " 08:00:00");
 
-            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjId == id).FirstOrDefault();
+            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjId == id).FirstOrDefault();
             return Ok(content);
         }
 
@@ -59,12 +60,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             //string output = Regex.Replace(param.ObjSvg, pattern, "'");
             //output = output.Replace(@"""", @"\""");
             //param.ObjSvg = output;
-            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjId == param.ObjId).FirstOrDefault();
+            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjId == param.ObjId).FirstOrDefault();
             if (content == null)
             {
                 param.ObjW = 0;
                 param.ObjH = 0;
-                _contextDCI.LnsEquipmentMasters.Add(param);
+                _contextDCI.LnsEquipmentMaster.Add(param);
             }
             else
             {
@@ -84,13 +85,13 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             //string output = Regex.Replace(param.ObjSvg, pattern, "'");
             //output = output.Replace(@"""", @"\""");
             //param.ObjSvg = output;
-            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjId == param.ObjId).FirstOrDefault();
+            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjId == param.ObjId).FirstOrDefault();
             if (content != null)
             {
                 content.ObjW = 0;
                 content.ObjH = 0;
                 content.ObjSvg = param.ObjSvg;
-                _contextDCI.LnsEquipmentMasters.Update(content);
+                _contextDCI.LnsEquipmentMaster.Update(content);
             }
             int update = _contextDCI.SaveChanges();
             return Ok(new { status = update, msg = msg });
@@ -102,19 +103,19 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         {
             int res = 0;
             string status = param.EqpStatus;
-            var equipment = _contextDCI.LnsEquipments.FirstOrDefault(x => x.EqpId == param.EqpId);
+            var equipment = _contextDCI.LnsEquipment.FirstOrDefault(x => x.EqpId == param.EqpId);
             if (equipment != null)
             {
                 double condDays = equipment.ObjMstNextYear == 1 ? 30 : 10;  // -30
                 double diffDays = Math.Ceiling(((DateTime)equipment.EqpNextCheckDt - DateTime.Now).TotalDays); // 14
                 if (diffDays >= (condDays * -1) && diffDays <= condDays)
                 {
-                    param.Nbr = _contextDCI.LnsEquipmentCheckLogs.Count().ToString();
+                    param.Nbr = _contextDCI.LnsEquipmentCheckLog.Count().ToString();
                     param.EqpCheckDt = DateTime.Now;
                     param.EqpNextCheckDt = equipment.EqpNextCheckDt;
                     param.EqpStatus = status == "true" ? "normal" : "abnormal";
                     param.EqpCheckBy = param.EqpCheckBy;
-                    _contextDCI.LnsEquipmentCheckLogs.Add(param);
+                    _contextDCI.LnsEquipmentCheckLog.Add(param);
                     int updateLog = _contextDCI.SaveChanges();
                     if (updateLog > 0)
                     {
@@ -168,7 +169,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/get")]
         public IActionResult GetEquipments()
         {
-            var content = _contextDCI.LnsEquipments.ToList();
+            var content = _contextDCI.LnsEquipment.ToList();
             return Ok(content);
         }
 
@@ -177,10 +178,10 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/get/id/{eqpId}")]
         public IActionResult GetEquipments(string eqpId)
         {
-            var content = (from eqp in _contextDCI.LnsEquipments.Where(x => x.EqpId == eqpId).ToList()
-                           join emp in _contextDCI.Employees
+            var content = (from eqp in _contextDCI.LnsEquipment.Where(x => x.EqpId == eqpId).ToList()
+                           join emp in _contextDCI.Employee
                            on eqp.EqpLastCheckBy equals emp.Code
-                           join master in _contextDCI.LnsEquipmentMasters
+                           join master in _contextDCI.LnsEquipmentMaster
                            on eqp.ObjId equals master.ObjId
                            select new
                            {
@@ -208,8 +209,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment")]
         public IActionResult Equipment([FromBody] LnsEquipment param)
         {
-            var context = (from eqp in _contextDCI.LnsEquipments.DefaultIfEmpty()
-                           join obj in _contextDCI.LnsEquipmentMasters
+            var context = (from eqp in _contextDCI.LnsEquipment.DefaultIfEmpty()
+                           join obj in _contextDCI.LnsEquipmentMaster
                            on eqp.ObjId equals obj.ObjId
                            where eqp.EqpStatus == "pending" || eqp.EqpStatus == "completed"
                            select new
@@ -228,7 +229,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                eqp.EqpScale,
                                eqp.EqpNextCheckDt,
                                eqp.EqpRotate,
-                               Status = (_contextDCI.LnsEquipmentCheckLogs.Where(x => x.EqpId == eqp.EqpId).OrderByDescending(x => x.EqpCheckDt).FirstOrDefault().EqpStatus)
+                               Status = (_contextDCI.LnsEquipmentCheckLog.Where(x => x.EqpId == eqp.EqpId).OrderByDescending(x => x.EqpCheckDt).FirstOrDefault().EqpStatus)
                            }).ToList();
             if (param.LayoutCode != "" && param.LayoutCode != "null" && param.LayoutCode != null)
             {
@@ -243,7 +244,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult EquipmentAdd([FromBody] LnsEquipment param)
         {
             string EqpId = "";
-            var ObjIdMaster = _contextDCI.LnsEquipments.Where(x => x.ObjId.StartsWith(param.ObjId)).ToList().LastOrDefault();
+            var ObjIdMaster = _contextDCI.LnsEquipment.Where(x => x.ObjId.StartsWith(param.ObjId)).ToList().LastOrDefault();
             if (ObjIdMaster != null)
             {
                 int Running = int.Parse(ObjIdMaster.EqpId.Substring(ObjIdMaster.EqpId.Length - 3));
@@ -264,7 +265,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             param.EqpX = param.EqpX - (param.EqpW / 2);
             param.EqpY = param.EqpY - (param.EqpH / 2);
             param.EqpRotate = param.EqpRotate;
-            _contextDCI.LnsEquipments.Add(param);
+            _contextDCI.LnsEquipment.Add(param);
             int res = _contextDCI.SaveChanges();
             return Ok(new { status = res });
             //LnsPoint newPoint = new LnsPoint();
@@ -380,10 +381,10 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/master/equipment/delete/{id}")]
         public IActionResult DeleteMasterEquipment(string id)
         {
-            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjId == id).FirstOrDefault();
+            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjId == id).FirstOrDefault();
             if (content != null)
             {
-                _contextDCI.LnsEquipmentMasters.Remove(content);
+                _contextDCI.LnsEquipmentMaster.Remove(content);
             }
             int res = _contextDCI.SaveChanges();
             return Ok(new { status = res });
@@ -393,10 +394,10 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/delete")]
         public IActionResult DeleteEquipment([FromBody] LnsEquipment param)
         {
-            var content = _contextDCI.LnsEquipments.FirstOrDefault(x => x.EqpId == param.EqpId);
+            var content = _contextDCI.LnsEquipment.FirstOrDefault(x => x.EqpId == param.EqpId);
             if (content != null)
             {
-                _contextDCI.LnsEquipments.Remove(content);
+                _contextDCI.LnsEquipment.Remove(content);
             }
             int res = _contextDCI.SaveChanges();
             return Ok(new { status = res });
@@ -407,7 +408,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout/add")]
         public IActionResult AddLayout([FromBody] LnsLayout param)
         {
-            _contextDCI.LnsLayouts.Add(param);
+            _contextDCI.LnsLayout.Add(param);
             int res = _contextDCI.SaveChanges();
             return Ok(new { status = res });
         }
@@ -416,7 +417,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout")]
         public IActionResult GetLayouts()
         {
-            var content = _contextDCI.LnsLayouts.OrderBy(x => x.LayoutCode).ToList();
+            var content = _contextDCI.LnsLayout.OrderBy(x => x.LayoutCode).ToList();
             return Ok(content);
         }
 
@@ -424,7 +425,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout/{layoutCode}")]
         public IActionResult GetLayoutsByCode(string layoutCode)
         {
-            var content = _contextDCI.LnsLayouts.Where(x => x.LayoutCode == layoutCode).OrderBy(x => x.LayoutCode).ToList();
+            var content = _contextDCI.LnsLayout.Where(x => x.LayoutCode == layoutCode).OrderBy(x => x.LayoutCode).ToList();
             return Ok(content);
         }
 
@@ -432,7 +433,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout/equipment/del/{eqpId}")]
         public IActionResult DelEquipmentOfLayout(string eqpId)
         {
-            var content = _contextDCI.LnsEquipments.FirstOrDefault(x => x.EqpId == eqpId);
+            var content = _contextDCI.LnsEquipment.FirstOrDefault(x => x.EqpId == eqpId);
             if (content != null)
             {
                 _contextDCI.Remove(content);
@@ -457,13 +458,13 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/log/get/{id}")]
         public IActionResult getLogByEqpId(string id)
         {
-            var equipmentLog = _contextDCI.LnsEquipmentCheckLogs.ToList();
+            var equipmentLog = _contextDCI.LnsEquipmentCheckLog.ToList();
             if (id != "" && id != "ALL")
             {
                 equipmentLog = equipmentLog.Where(x => x.EqpId == id).ToList();
             }
             var content = from eqpLog in equipmentLog
-                          join emp in _contextDCI.Employees
+                          join emp in _contextDCI.Employee
                           on eqpLog.EqpCheckBy equals emp.Code
                           select new
                           {
@@ -499,9 +500,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout/equipment/{layoutCode}")]
         public IActionResult GetEquipmentOfLayout(string layoutCode)
         {
-            var layout = _contextDCI.LnsLayouts.FirstOrDefault(x => x.LayoutCode == layoutCode);
-            var content = from eqp in _contextDCI.LnsEquipments.Where(x => x.LayoutCode == layoutCode).ToList()
-                          join master in _contextDCI.LnsEquipmentMasters
+            var layout = _contextDCI.LnsLayout.FirstOrDefault(x => x.LayoutCode == layoutCode);
+            var content = from eqp in _contextDCI.LnsEquipment.Where(x => x.LayoutCode == layoutCode).ToList()
+                          join master in _contextDCI.LnsEquipmentMaster
                           on eqp.ObjId equals master.ObjId
                           select new
                           {
@@ -531,12 +532,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/axis/")]
         public IActionResult UpdateAxisEquipment([FromBody] LnsEquipment param)
         {
-            var content = _contextDCI.LnsEquipments.Where(x => x.EqpId == param.EqpId).ToList();
+            var content = _contextDCI.LnsEquipment.Where(x => x.EqpId == param.EqpId).ToList();
             foreach (LnsEquipment equipment in content)
             {
                 equipment.EqpX = param.EqpX;
                 equipment.EqpY = param.EqpY;
-                _contextDCI.LnsEquipments.Update(equipment).Property(x => x.EqpPriority).IsModified = false;
+                _contextDCI.LnsEquipment.Update(equipment).Property(x => x.EqpPriority).IsModified = false;
             }
             int res = _contextDCI.SaveChanges();
             return Ok(new
@@ -547,52 +548,269 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
 
 
+        #region Layout
         [HttpPost]
-        [Route("/mpck/getobjectlist")]
-        public IActionResult GetObjectList([FromBody] MParamLayoutInfo param)
+        [Route("/mpck/getLayoutlist")]
+        public IActionResult GetLayoutList([FromBody] MParamObjectCodeInfo param)
         {
-            var oObjects = _contxMP.ViMpckObjectList.Where( o => o.LayoutStatus == "TRUE" && o.LayoutCode == param.LayoutCode ).ToList();
+            List<MpckLayout> oLayouts = new List<MpckLayout>();
+            if (param.ObjCode.Trim() == "")
+            {
+                oLayouts = _contxMP.MpckLayout.ToList();
+            }
+            else
+            {
+                oLayouts = _contxMP.MpckLayout.Where(l => l.LayoutCode == param.ObjCode).ToList();
+            }
+            return Ok(oLayouts);
+        }
 
-            var oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
+        [HttpPost]
+        [Route("/mpck/addLayout")]
+        public IActionResult AddLayout([FromBody] MpckLayout param)
+        {
+            List<MpckLayout> oLayouts = _contxMP.MpckLayout.Where(l => l.LayoutCode == param.LayoutCode).ToList();
+
+            if (oLayouts.Count == 0)
+            {
+                _contxMP.MpckLayout.Add(param);
+                _contxMP.Entry(param).State = EntityState.Added;
+                int res = _contxMP.SaveChanges();
+
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "error" });
+            }
+        }
+
+        [HttpPost]
+        [Route("/mpck/updateStatusLayout")]
+        public IActionResult UpdateStatusLayout([FromBody] MParamObjectStatusInfo param)
+        {
+            List<MpckLayout> oLayouts = _contxMP.MpckLayout.Where(m => m.LayoutCode == param.ObjCode).ToList();
+
+            if (oLayouts.Count == 0)
+            {
+                MpckLayout oLayout = oLayouts[0];
+                oLayout.LayoutStatus = param.ObjStatus;
+                _contxMP.MpckLayout.Add(oLayout);
+                _contxMP.Entry(oLayout).State = EntityState.Modified;
+                int res = _contxMP.SaveChanges();
+
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+        }
+        #endregion
+
+
+        #region Object
+        [HttpPost]
+        [Route("/mpck/getObjectlistbylayout")]
+        public IActionResult GetObjectListByLayout([FromBody] MParamLayoutInfo param)
+        {
+            List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.LayoutStatus == "ACTIVE" && o.LayoutCode == param.LayoutCode).ToList();
+
+            List<OtrqReq> oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
                             && (o.Odate == param.dataDate || o.Odate == param.dataDate.AddDays(1))
-                            && (o.Rq == param.dataDate.Day.ToString() || o.Rq == $"{param.dataDate.Day.ToString()}0")  ).ToList();
+                            && (o.Rq == param.dataDate.Day.ToString() || o.Rq == $"{param.dataDate.Day.ToString()}0")).ToList();
 
             var result = from obj in oObjects.OrderByDescending(b => b.ObjCode)
-                          join ot in oEmpOTs
-                          on obj.EmpCode equals ot.Code into d2 from f in d2.DefaultIfEmpty()
-                          select new
-                          {
-                              obj.ObjCode,
-                              obj.LayoutCode,
-                              obj.ObjMasterId,
-                              obj.ObjType,
-                              obj.ObjTitle,
-                              obj.ObjSubtitle,
-                              obj.ObjPath,
-                              obj.ObjX,
-                              obj.ObjY,
-                              obj.ObjStatus,
-                              obj.EmpCode,
-                              obj.ObjLastCheckDt,
-                              obj.LayoutName,
-                              obj.LayoutSubName,
-                              obj.Factory,
-                              obj.Line,
-                              obj.SubLine,
-                              obj.LayoutStatus,
-                              obj.BypassMq,
-                              obj.BypassSa,
-                              obj.Mq ,
-                              obj.Sa ,
-                              Ot = (obj.EmpCode == "TRUE") ? (f.Code == null) ? "FALSE" : "TRUE" : "FALSE",
-                              obj.EmpImage
-                          };
+                         join ot in oEmpOTs
+                         on obj.EmpCode equals ot.Code into d2
+                         from f in d2.DefaultIfEmpty()
+                         select new
+                         {
+                             obj.ObjCode,
+                             obj.LayoutCode,
+                             obj.ObjMasterId,
+                             obj.ObjType,
+                             obj.ObjTitle,
+                             obj.ObjSubtitle,
+                             obj.ObjPath,
+                             obj.ObjX,
+                             obj.ObjY,
+                             obj.ObjStatus,
+                             obj.EmpCode,
+                             obj.ObjLastCheckDt,
+                             obj.LayoutName,
+                             obj.LayoutSubName,
+                             obj.Factory,
+                             obj.Line,
+                             obj.SubLine,
+                             obj.LayoutStatus,
+                             obj.BypassMq,
+                             obj.BypassSa,
+                             obj.Mq,
+                             obj.Sa,
+                             Ot = (obj.EmpCode == "TRUE") ? (f.Code == null) ? "FALSE" : "TRUE" : "FALSE",
+                             obj.EmpImage
+                         };
 
 
 
             return Ok(result);
-            
+
         }
+
+
+        [HttpPost]
+        [Route("/mpck/getObjectlist")]
+        public IActionResult GetObjectList([FromBody] MParamObjectCodeInfo param)
+        {
+            List<MpckObject> oMstObjs = new List<MpckObject>();
+            if (param.ObjCode.Trim() == "")
+            {
+                oMstObjs = _contxMP.MpckObject.ToList();
+            }
+            else
+            {
+                oMstObjs = _contxMP.MpckObject.Where(l => l.ObjCode == param.ObjCode).ToList();
+            }
+
+            return Ok(oMstObjs);
+
+        }
+
+        [HttpPost]
+        [Route("/mpck/addObject")]
+        public IActionResult AddObject([FromBody] MParamObjectAddInfo param)
+        {
+            string dockey = (param.ObjType == "MP") ? "MPCK_OBJECT_MP" : "MPCK_OBJECT_OTH";
+            List<SpDCRunNbr> nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
+            
+            if (nbr.Count > 0)
+            {
+                MpckObject mObj = new MpckObject();
+                mObj.ObjCode = nbr[0].RunNbr;
+                mObj.LayoutCode = param.LayoutCode;
+                mObj.ObjMasterId = param.ObjMasterId;
+                mObj.ObjType = param.ObjType;
+                mObj.ObjTitle = param.ObjTitle;
+                mObj.ObjSubtitle = param.ObjSubtitle;
+                mObj.ObjPath = "";
+                mObj.ObjX = param.ObjX;
+                mObj.ObjY = param.ObjY;
+                mObj.ObjStatus = "";
+                mObj.EmpCode = "";
+                mObj.ObjLastCheckDt = DateTime.Now;
+
+                _contxMP.MpckObject.Add(mObj);
+                _contxMP.Entry(mObj).State = EntityState.Added;
+                int res = _contxMP.SaveChanges();
+
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+
+        }
+
+        [HttpPost]
+        [Route("/mpck/deleteObject")]
+        public IActionResult DeleteObject([FromBody] MParamObjectCodeInfo param)
+        {
+
+            List<MpckObject> oObjects = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+
+            if (oObjects.Count > 0)
+            {
+                MpckObject oObject = oObjects[0];
+
+                _contxMP.MpckObject.Add(oObject);
+                _contxMP.Entry(oObject).State = EntityState.Deleted;
+                int res = _contxMP.SaveChanges();
+                return Ok(new { status = res });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+
+
+        }
+         
+        [HttpPost]
+        [Route("/mpck/editObjectTitle")]
+        public IActionResult EditTitleObject([FromBody] MParamObjectEditTitleInfo param)
+        {
+            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+
+            if (oObjs.Count > 0)
+            {
+                MpckObject oObjUpd = oObjs[0];
+                oObjUpd.ObjTitle = param.ObjTitle;
+                oObjUpd.ObjSubtitle = param.ObjSubtitle;
+
+                _contxMP.MpckObject.Attach(oObjUpd);
+                _contxMP.Entry(oObjUpd).State = EntityState.Modified;
+                int changed = _contxMP.SaveChanges();
+
+                return Ok(new { status = changed });
+            }
+            else
+            {
+                return BadRequest(new { status = "0" });
+            }
+        }
+
+
+        [HttpPost]
+        [Route("/mpck/editObjectPosition")]
+        public IActionResult EditPositionObject([FromBody] MParamObjectEditXYInfo param)
+        {
+            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+
+            if (oObjs.Count > 0)
+            {
+                MpckObject oObjUpd = oObjs[0];
+                oObjUpd.ObjX = param.ObjX;
+                oObjUpd.ObjY = param.ObjY;
+
+                _contxMP.MpckObject.Attach(oObjUpd);
+                _contxMP.Entry(oObjUpd).State = EntityState.Modified;
+                int changed = _contxMP.SaveChanges();
+
+                return (changed == 1) ? Ok(new { status = "updated" }) : Ok(new { status = $"not update ({changed})" });
+            }
+            else
+            {
+                return BadRequest(new { status = "no data" });
+            }
+        }
+
+
+
+        #endregion
+
+
+        #region Master Object
+
+        [HttpPost]
+        [Route("/mpck/getMasterlist")]
+        public IActionResult GetMasterList([FromBody] MParamObjectCodeInfo param)
+        {
+            List<MpckObjectMaster> oMstObjs = new List<MpckObjectMaster>();
+            if (param.ObjCode.Trim() == "")
+            {
+                oMstObjs = _contxMP.MpckObjectMaster.ToList();
+            }
+            else
+            {
+                oMstObjs = _contxMP.MpckObjectMaster.Where( l => l.ObjMasterId == param.ObjCode).ToList();
+            }
+            
+            return Ok(oMstObjs);
+
+        }
+         
 
         [HttpPost]
         [Route("/mpck/addMaster")]
@@ -636,17 +854,19 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             }
         }
 
+
         [HttpPost]
-        [Route("/mpck/deleteMaster")]
-        public IActionResult DeleteMaster([FromBody] MpckObjectMaster param)
+        [Route("/mpck/updateStatusMaster")]
+        public IActionResult UpdateStatusMaster([FromBody] MParamObjectStatusInfo param)
         {
-            List<MpckObjectMaster> oMasters = _contxMP.MpckObjectMaster.Where(m => m.ObjMasterId == param.ObjMasterId).ToList();
+            List<MpckObjectMaster> oMasters = _contxMP.MpckObjectMaster.Where(m => m.ObjMasterId == param.ObjCode).ToList();
 
             if (oMasters.Count == 0)
             {
-
-                _contxMP.MpckObjectMaster.Add(param);
-                _contxMP.Entry(param).State = EntityState.Deleted;
+                MpckObjectMaster oMaster = oMasters[0];
+                oMaster.MstStatus = param.ObjStatus;
+                _contxMP.MpckObjectMaster.Add(oMaster);
+                _contxMP.Entry(oMaster).State = EntityState.Modified;
                 int res = _contxMP.SaveChanges();
 
                 return Ok(new { status = res });
@@ -657,139 +877,179 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             }
         }
 
+        #endregion
 
 
-
-
+        #region MQ / SA
         [HttpPost]
-        [Route("/mpck/addObject")]
-        public IActionResult AddObject([FromBody] MParamObjectAddInfo param)
+        [Route("/mpck/getMQSAListByLayout")]
+        public IActionResult SearchMQSAByLayout([FromBody] MParamDictSearchInfo param)
         {
-            //string dockey = (param.ObjType == "MP") ? "MPCK_OBJECT_MP" : "MPCK_OBJECT_OTH";
-            string dockey = "MPCK_OBJECT_MP";
-            SpDCRunNbr nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"[dbo].[sp_DCRunNbr] @DocKey", new SqlParameter("@DocKey", "MPCK_OBJECT_MP")).First();
-
-            //string nbr = _contxMP.Database.From($"[dbo].[sp_DCRunNbr] @DocKey={dockey}");
-            //_contxMP.SpDCRunNbr.FromSqlRaw(dockey);
-
-
-            //return context?.Students?.FromSqlRaw("FindStudents @searchFor", new SqlParameter("@searchFor", searchFor)).ToList();
-
-            MpckObject mObj = new MpckObject();
-            mObj.ObjCode = nbr.RunNbr;
-            mObj.LayoutCode = param.LayoutCode;
-            mObj.ObjMasterId = param.ObjMasterId;
-            mObj.ObjType = param.ObjType;
-            mObj.ObjTitle = param.ObjTitle;
-            mObj.ObjSubtitle = param.ObjSubtitle;
-            mObj.ObjPath = "";
-            mObj.ObjX = param.ObjX;
-            mObj.ObjY = param.ObjY;
-            mObj.ObjStatus = "";
-            mObj.EmpCode = "";
-            mObj.ObjLastCheckDt = DateTime.Now;
-
-            _contxMP.MpckObject.Add(mObj);
-            _contxMP.Entry(mObj).State = EntityState.Added;
-            int res = _contxMP.SaveChanges();
-
-            return Ok(new { status = res });
+            List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode2 == param.SearchCode && d.DictType == param.SearchType).ToList();
+            return Ok(oMQSAs);
         }
 
         [HttpPost]
-        [Route("/mpck/deleteObject")]
-        public IActionResult DeleteObject([FromBody] MParamObjectCodeInfo param)
+        [Route("/mpck/getMQSAListByObject")]
+        public IActionResult SearchMQSAByObject([FromBody] MParamDictSearchInfo param)
         {
-
-            List<MpckObject> oObjects = _contxMP.MpckObject.Where( o => o.ObjCode == param.ObjCode).ToList();
-
-            if(oObjects.Count > 0)
-            {
-                MpckObject oObject = oObjects[0];
-
-                _contxMP.MpckObject.Add(oObject);
-                _contxMP.Entry(oObject).State = EntityState.Deleted;
-                int res = _contxMP.SaveChanges();
-                return Ok(new { status = res });
-            }
-            else
-            {
-                return BadRequest(new { status = "0" });
-            }
-
-
+            List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.SearchCode && d.DictType == param.SearchType).ToList();
+            return Ok(oMQSAs);
         }
 
 
         [HttpPost]
-        [Route("/mpck/addLayout")]
-        public IActionResult AddLayout([FromBody] MpckLayout param)
+        [Route("/mpck/addMQSA")]
+        public IActionResult AddMQSA([FromBody] MParamDictInfo param)
         {
-            List<MpckLayout> oLayouts = _contxMP.MpckLayout.Where( l => l.LayoutCode == param.LayoutCode).ToList();
 
-            if(oLayouts.Count == 0)
+            List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictCode == param.DictCode && d.DictType == param.DictType).ToList();
+
+            if (oMQSAs.Count == 0)
             {
-                _contxMP.MpckLayout.Add(param);
-                _contxMP.Entry(param).State = EntityState.Added;
+                MpckDictionary oDict = new MpckDictionary();
+                oDict.DictType = param.DictType;
+                oDict.DictCode = param.DictCode;
+                oDict.DictName = "";
+                oDict.DictSubName = "";
+                oDict.DictRefCode = param.ObjCode;
+                oDict.DictRefCode2 = param.LayOutCode;
+                oDict.DictRefName = "";
+                oDict.DictRefSubName = "";
+
+
+                _contxMP.MpckDictionary.Add(oDict);
+                _contxMP.Entry(oDict).State = EntityState.Added;
                 int res = _contxMP.SaveChanges();
 
                 return Ok(new { status = res });
             }
             else
             {
-                return BadRequest(new { status = "error" });
+                return BadRequest(new { status = "0", msg ="duplicate" });
             }
         }
 
-
         [HttpPost]
-        [Route("/mpck/editObjectTitle")]
-        public IActionResult EditTitleObject([FromBody] MParamObjectEditTitleInfo param)
+        [Route("/mpck/deleteMQSA")]
+        public IActionResult DeleteMQSA([FromBody] MParamDictInfo param)
         {
-            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+            List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictCode == param.DictCode && d.DictType == param.DictType).ToList();
 
-            if(oObjs.Count > 0)
+            if (oMQSAs.Count == 0)
             {
-                MpckObject oObjUpd = oObjs[0];
-                oObjUpd.ObjTitle = param.ObjTitle;
-                oObjUpd.ObjSubtitle = param.ObjSubtitle;
+                MpckDictionary oDict = oMQSAs[0];
 
-                _contxMP.MpckObject.Attach(oObjUpd);
-                _contxMP.Entry(oObjUpd).State = EntityState.Modified;
-                int changed = _contxMP.SaveChanges();
 
-                return Ok(new { status = changed });
+                _contxMP.MpckDictionary.Add(oDict);
+                _contxMP.Entry(oDict).State = EntityState.Deleted;
+                int res = _contxMP.SaveChanges();
+
+                return Ok(new { status = res });
             }
             else
             {
-                return BadRequest(new { status = "0" });
+                return BadRequest(new { status = "0", msg = "duplicate" });
             }
         }
 
 
         [HttpPost]
-        [Route("/mpck/editObjectPosition")]
-        public IActionResult EditPositionObject([FromBody] MParamObjectEditXYInfo param)
+        [Route("/mpck/getSAList")]
+        public IActionResult GetSAList() {
+
+            List<SkcDictMstr> oSAs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus  == true && d.DictType == "LICENSE").ToList();
+            return Ok(oSAs);            
+        }
+
+        [HttpPost]
+        [Route("/mpck/getMQList")]
+        public IActionResult GetMQList()
+        {
+            List<TrLineProcess> oMQs = _contextDCI.TrLineProcess.Where(l => l.ProcType == "MQ").ToList();
+            return Ok(oMQs);
+        }
+
+        #endregion
+
+
+        #region Check In/Out
+
+        [HttpPost]
+        [Route("/mpck/checkInOut")]
+        public IActionResult CheckInOut([FromBody] MParamCheckInOutInfo param)
         {
             List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
 
             if (oObjs.Count > 0)
             {
                 MpckObject oObjUpd = oObjs[0];
-                oObjUpd.ObjX = param.ObjX;
-                oObjUpd.ObjY = param.ObjY;
+                bool stsUpd = false;
+                if (param.Cktype == "IN")
+                {
+                    if (oObjUpd.EmpCode == "")
+                    {
+                        stsUpd = true;
+                        oObjUpd.EmpCode = param.EmpCode;
+                    }
+                    else
+                    {
+                        return BadRequest(new { status = "0", msg = "object is not avaiable" });
+                    }
+                }
+                else if (param.Cktype == "OUT")
+                {
+                    if (param.EmpCode == oObjUpd.EmpCode)
+                    {
+                        stsUpd = true;
+                        oObjUpd.EmpCode = "";
+                    }
+                    else
+                    {
+                        return BadRequest(new { status = "0", msg = "employee not match" });
+                    }
+                }
 
-                _contxMP.MpckObject.Attach(oObjUpd);
-                _contxMP.Entry(oObjUpd).State = EntityState.Modified;
-                int changed = _contxMP.SaveChanges();
+                if (stsUpd)
+                {
+                    //****** Update Object Check In/Out ********
+                    oObjUpd.ObjLastCheckDt = DateTime.Now;
+                    _contxMP.MpckObject.Attach(oObjUpd);
+                    _contxMP.Entry(oObjUpd).State = EntityState.Modified;
+                    int changed = _contxMP.SaveChanges();
 
-                return (changed == 1) ? Ok(new { status = "updated" }) : Ok(new { status = $"not update ({changed})" });
+
+                    //****** Insert Log Check In/Out ********
+                    MpckCheckInLog oLog = new MpckCheckInLog();
+                    oLog.Nbr = oHelper.generateNbr();
+                    oLog.Ckdate = param.Ckdate;
+                    oLog.Ckshift = param.Ckshift;
+                    oLog.Cktype = param.Cktype;
+                    oLog.CkdateTime = DateTime.Now;
+                    oLog.EmpCode = param.EmpCode;
+                    oLog.ObjCode = param.ObjCode;
+
+                    _contxMP.MpckCheckInLog.Attach(oLog);
+                    _contxMP.Entry(oLog).State = EntityState.Modified;
+                    int added = _contxMP.SaveChanges();
+
+
+                    return (changed == 1) ? Ok(new { status = changed }) : Ok(new { status = "0", msg = "can not updated" });
+                }
+                else
+                {
+                    return BadRequest(new { status = "0", msg = "can not updated" });
+                }
+
             }
             else
             {
-                return BadRequest(new { status = "no data" });
+                return BadRequest(new { status = "no object data" });
             }
         }
+
+
+        #endregion
 
 
 

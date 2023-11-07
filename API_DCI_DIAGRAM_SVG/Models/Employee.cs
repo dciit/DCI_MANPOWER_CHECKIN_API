@@ -6,6 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API_DCI_DIAGRAM_SVG.Models
 {
+    [Index(nameof(Resign), Name = "IX_Employee")]
+    [Index(nameof(Costcenter), nameof(Resign), Name = "IX_Employee_1")]
+    [Index(nameof(LineCode), nameof(Dvcd), nameof(Resign), Name = "IX_Employee_2")]
+    [Index(nameof(Resign), nameof(Posit), nameof(Costcenter), nameof(Budgettype), nameof(LineCode), nameof(Dvcd), Name = "IX_Employee_3")]
     public partial class Employee
     {
         [Key]
