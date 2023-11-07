@@ -569,19 +569,40 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/addLayout")]
         public IActionResult AddLayout([FromBody] MpckLayout param)
         {
-            List<MpckLayout> oLayouts = _contxMP.MpckLayout.Where(l => l.LayoutCode == param.LayoutCode).ToList();
+            string dockey = "MPCK_LAYOUT";
+            List<SpDCRunNbr> nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
 
-            if (oLayouts.Count == 0)
+            try
             {
-                _contxMP.MpckLayout.Add(param);
-                _contxMP.Entry(param).State = EntityState.Added;
-                int res = _contxMP.SaveChanges();
+                if(nbr.Count > 0)
+                {
+                    MpckLayout oLayout = new MpckLayout();
+                    oLayout.LayoutCode = nbr[0].RunNbr;
+                    oLayout.LayoutName = param.LayoutName;
+                    oLayout.LayoutSubName = param.LayoutSubName;
+                    oLayout.Factory = param.Factory;
+                    oLayout.Line = param.Line;
+                    oLayout.SubLine = param.SubLine;
+                    oLayout.LayoutStatus = "ACTIVE";
+                    oLayout.BypassSa = "FALSE";
+                    oLayout.BypassMq = "FALSE";
+                    oLayout.UpdateBy = param.UpdateBy;
+                    oLayout.UpdateDate = DateTime.Now;
 
-                return Ok(new { status = res });
+
+                    _contxMP.MpckLayout.Add(oLayout);
+                    _contxMP.Entry(oLayout).State = EntityState.Added;
+                    int res = _contxMP.SaveChanges();
+
+                    return Ok(new { status = res, msg = nbr[0].RunNbr });
+                }
+                else
+                {
+                    return BadRequest(new { status = "0", msg = "error gen nbr" });
+                }                
             }
-            else
-            {
-                return BadRequest(new { status = "error" });
+            catch {
+                return BadRequest(new { status = "0", msg="error" });               
             }
         }
 
@@ -683,32 +704,38 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         {
             string dockey = (param.ObjType == "MP") ? "MPCK_OBJECT_MP" : "MPCK_OBJECT_OTH";
             List<SpDCRunNbr> nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
-            
-            if (nbr.Count > 0)
+            try
             {
-                MpckObject mObj = new MpckObject();
-                mObj.ObjCode = nbr[0].RunNbr;
-                mObj.LayoutCode = param.LayoutCode;
-                mObj.ObjMasterId = param.ObjMasterId;
-                mObj.ObjType = param.ObjType;
-                mObj.ObjTitle = param.ObjTitle;
-                mObj.ObjSubtitle = param.ObjSubtitle;
-                mObj.ObjPath = "";
-                mObj.ObjX = param.ObjX;
-                mObj.ObjY = param.ObjY;
-                mObj.ObjStatus = "";
-                mObj.EmpCode = "";
-                mObj.ObjLastCheckDt = DateTime.Now;
+                if (nbr.Count > 0)
+                {
+                    MpckObject mObj = new MpckObject();
+                    mObj.ObjCode = nbr[0].RunNbr;
+                    mObj.LayoutCode = param.LayoutCode;
+                    mObj.ObjMasterId = param.ObjMasterId;
+                    mObj.ObjType = param.ObjType;
+                    mObj.ObjTitle = param.ObjTitle;
+                    mObj.ObjSubtitle = param.ObjSubtitle;
+                    mObj.ObjPath = "";
+                    mObj.ObjX = param.ObjX;
+                    mObj.ObjY = param.ObjY;
+                    mObj.ObjStatus = "";
+                    mObj.EmpCode = "";
+                    mObj.ObjLastCheckDt = DateTime.Now;
 
-                _contxMP.MpckObject.Add(mObj);
-                _contxMP.Entry(mObj).State = EntityState.Added;
-                int res = _contxMP.SaveChanges();
+                    _contxMP.MpckObject.Add(mObj);
+                    _contxMP.Entry(mObj).State = EntityState.Added;
+                    int res = _contxMP.SaveChanges();
 
-                return Ok(new { status = res });
+                    return Ok(new { status = res, msg= nbr[0].RunNbr });
+                }
+                else
+                {
+                    return BadRequest(new { status = "0", msg="error gen nbr" });
+                }
             }
-            else
+            catch
             {
-                return BadRequest(new { status = "0" });
+                return BadRequest(new { status = "0", msg="error" });
             }
 
         }
@@ -810,25 +837,45 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             return Ok(oMstObjs);
 
         }
-         
+
+        [HttpPost]
+        [Route("/mpck/generateMasterNbr")]
+        public IActionResult generateMasterNbr()
+        {
+            string dockey = "MPCK_MASTER";
+            List<SpDCRunNbr> nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
+            if(nbr.Count > 0)
+            {
+                return Ok(new { DocNbr = nbr[0].RunNbr });
+            }
+            else
+            {
+                return BadRequest(new { DocNbr = "error" });
+            }
+            
+        }
 
         [HttpPost]
         [Route("/mpck/addMaster")]
         public IActionResult AddMaster([FromBody] MpckObjectMaster param)
         {
-            List<MpckObjectMaster> oMasters = _contxMP.MpckObjectMaster.Where(m => m.ObjMasterId == param.ObjMasterId).ToList();
-
-            if (oMasters.Count == 0)
+            try
             {
-                _contxMP.MpckObjectMaster.Add(param);
-                _contxMP.Entry(param).State = EntityState.Added;
+                MpckObjectMaster oMst = new MpckObjectMaster();
+                oMst.ObjMasterId = param.ObjMasterId;
+                oMst.MstName = param.MstName;
+                oMst.ObjSvg = param.ObjSvg;
+                oMst.MstStatus = "ACTIVE";
+
+                _contxMP.MpckObjectMaster.Add(oMst);
+                _contxMP.Entry(oMst).State = EntityState.Added;
                 int res = _contxMP.SaveChanges();
 
-                return Ok(new { status = res });
+                return Ok(new { status = res, msg = param.ObjMasterId });
             }
-            else
+            catch
             {
-                return BadRequest(new { status = "0" });
+                return BadRequest(new { status = "0", msg="error" });            
             }
         }
 
@@ -987,15 +1034,75 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 bool stsUpd = false;
                 if (param.Cktype == "IN")
                 {
+
+
+                    
+
+
+                    //**** Check not have employee check in before *****
                     if (oObjUpd.EmpCode == "")
                     {
-                        stsUpd = true;
-                        oObjUpd.EmpCode = param.EmpCode;
+                        //****** check in ******
+                        bool statusMQ = true;
+                        bool statusSA = true;
+                        List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefName == param.ObjCode).OrderBy(or => or.DictType).ToList();
+                        if (oMQSAs.Count > 0)
+                        {
+                            List<ViTrTrainessLog> oEmpMQs = _contextDCI.ViTrTrainessLog.Where(tr => tr.EmpCode == param.EmpCode && tr.Result == "P" && tr.Status == "post").ToList();
+                            List<SkcLicenseTraining> oEmpSAs = _contxMP.SkcLicenseTraining.Where(ct => ct.Empcode == param.EmpCode && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList();
+
+                            //***** Loop Foreach ******
+                            foreach (MpckDictionary oMQSA in oMQSAs)
+                            {
+                                if (oMQSA.DictType == "MQ")
+                                {
+                                    if (oEmpMQs.Count > 0)
+                                    {
+                                        if (oEmpMQs.Where(mq => mq.MqNo == oMQSA.DictCode).Count() == 0)
+                                        {
+                                            statusMQ = false;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        statusMQ = false;
+                                    }
+
+                                }
+                                else if (oMQSA.DictType == "SA")
+                                {
+                                    if (oEmpSAs.Count > 0)
+                                    {
+                                        if (oEmpSAs.Where(sa => sa.DictCode == oMQSA.DictCode).Count() == 0)
+                                        {
+                                            statusSA = false;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        statusSA = false;
+                                    }
+                                }
+                            } // end foreach                        
+                        }
+
+
+                        //**** MQ = OK , SA = OK *****
+                        if (statusMQ && statusSA)
+                        {
+                            stsUpd = true;
+                            oObjUpd.EmpCode = param.EmpCode;
+                        }
+                        else
+                        {
+                            return BadRequest(new { status = "0", msg = "not MQ SA", mq = statusMQ, sa = statusSA });
+                        }
                     }
                     else
                     {
-                        return BadRequest(new { status = "0", msg = "object is not avaiable" });
+                        return BadRequest(new { status = "0", msg = "object is not avaiable", mq=false, sa=false });
                     }
+
                 }
                 else if (param.Cktype == "OUT")
                 {
@@ -1006,7 +1113,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     }
                     else
                     {
-                        return BadRequest(new { status = "0", msg = "employee not match" });
+                        return BadRequest(new { status = "0", msg = "employee not match", mq = false, sa = false });
                     }
                 }
 
@@ -1034,17 +1141,17 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     int added = _contxMP.SaveChanges();
 
 
-                    return (changed == 1) ? Ok(new { status = changed }) : Ok(new { status = "0", msg = "can not updated" });
+                    return (changed == 1) ? Ok(new { status = changed, msg="OK", mq=true, sa=true }) : Ok(new { status = "0", msg = "can not updated", mq=true, sa=true });
                 }
                 else
                 {
-                    return BadRequest(new { status = "0", msg = "can not updated" });
+                    return BadRequest(new { status = "0", msg = "can not updated", mq = false, sa = false });
                 }
 
             }
             else
             {
-                return BadRequest(new { status = "no object data" });
+                return BadRequest(new { status = "no object data", mq = false, sa = false });
             }
         }
 
