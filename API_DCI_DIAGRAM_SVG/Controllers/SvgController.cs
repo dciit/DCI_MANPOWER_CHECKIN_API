@@ -589,8 +589,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     oLayout.UpdateBy = param.UpdateBy;
                     oLayout.UpdateDate = DateTime.Now;
 
-
-                    _contxMP.MpckLayout.Add(oLayout);
+                    _contxMP.MpckLayout.Attach(oLayout);
                     _contxMP.Entry(oLayout).State = EntityState.Added;
                     int res = _contxMP.SaveChanges();
 
@@ -616,7 +615,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 MpckLayout oLayout = oLayouts[0];
                 oLayout.LayoutStatus = param.ObjStatus;
-                _contxMP.MpckLayout.Add(oLayout);
+                _contxMP.MpckLayout.Attach(oLayout);
                 _contxMP.Entry(oLayout).State = EntityState.Modified;
                 int res = _contxMP.SaveChanges();
 
@@ -722,7 +721,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     mObj.EmpCode = "";
                     mObj.ObjLastCheckDt = DateTime.Now;
 
-                    _contxMP.MpckObject.Add(mObj);
+                    _contxMP.MpckObject.Attach(mObj);
                     _contxMP.Entry(mObj).State = EntityState.Added;
                     int res = _contxMP.SaveChanges();
 
@@ -751,7 +750,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 MpckObject oObject = oObjects[0];
 
-                _contxMP.MpckObject.Add(oObject);
+                _contxMP.MpckObject.Attach(oObject);
                 _contxMP.Entry(oObject).State = EntityState.Deleted;
                 int res = _contxMP.SaveChanges();
                 return Ok(new { status = res });
@@ -867,7 +866,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 oMst.ObjSvg = param.ObjSvg;
                 oMst.MstStatus = "ACTIVE";
 
-                _contxMP.MpckObjectMaster.Add(oMst);
+                _contxMP.MpckObjectMaster.Attach(oMst);
                 _contxMP.Entry(oMst).State = EntityState.Added;
                 int res = _contxMP.SaveChanges();
 
@@ -888,8 +887,11 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
             if (oMasters.Count == 0)
             {
-                
-                _contxMP.MpckObjectMaster.Add(param);
+                MpckObjectMaster oMaster = oMasters[0];
+                oMaster.ObjSvg = param.ObjSvg;
+                oMaster.MstName = param.MstName;
+                oMaster.MstStatus = param.MstStatus;
+                _contxMP.MpckObjectMaster.Attach(oMaster);
                 _contxMP.Entry(param).State = EntityState.Modified;
                 int res = _contxMP.SaveChanges();
 
@@ -912,7 +914,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 MpckObjectMaster oMaster = oMasters[0];
                 oMaster.MstStatus = param.ObjStatus;
-                _contxMP.MpckObjectMaster.Add(oMaster);
+                _contxMP.MpckObjectMaster.Attach(oMaster);
                 _contxMP.Entry(oMaster).State = EntityState.Modified;
                 int res = _contxMP.SaveChanges();
 
@@ -964,8 +966,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 oDict.DictRefName = "";
                 oDict.DictRefSubName = "";
 
-
-                _contxMP.MpckDictionary.Add(oDict);
+                _contxMP.MpckDictionary.Attach(oDict);
                 _contxMP.Entry(oDict).State = EntityState.Added;
                 int res = _contxMP.SaveChanges();
 
@@ -987,8 +988,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 MpckDictionary oDict = oMQSAs[0];
 
-
-                _contxMP.MpckDictionary.Add(oDict);
+                _contxMP.MpckDictionary.Attach(oDict);
                 _contxMP.Entry(oDict).State = EntityState.Deleted;
                 int res = _contxMP.SaveChanges();
 
@@ -1008,6 +1008,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             List<SkcDictMstr> oSAs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus  == true && d.DictType == "LICENSE").ToList();
             return Ok(oSAs);            
         }
+
 
         [HttpPost]
         [Route("/mpck/getMQList")]
@@ -1034,10 +1035,6 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 bool stsUpd = false;
                 if (param.Cktype == "IN")
                 {
-
-
-                    
-
 
                     //**** Check not have employee check in before *****
                     if (oObjUpd.EmpCode == "")
