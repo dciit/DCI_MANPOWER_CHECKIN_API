@@ -27,7 +27,9 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
         public virtual DbSet<SkcLicenseTraining> SkcLicenseTraining { get; set; } = null!;
         public virtual DbSet<ViMpckDictionary> ViMpckDictionary { get; set; } = null!;
         public virtual DbSet<ViMpckObjectList> ViMpckObjectList { get; set; } = null!;
+
         public virtual DbSet<SpDCRunNbr> SpDCRunNbr { get; set; } = null!;
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -72,6 +74,8 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
             modelBuilder.Entity<ViMpckObjectList>(entity =>
             {
                 entity.ToView("vi_MPCK_ObjectList");
+
+                entity.Property(e => e.EmpName).UseCollation("SQL_Latin1_General_CP1_CI_AS");
             });
 
             OnModelCreatingPartial(modelBuilder);

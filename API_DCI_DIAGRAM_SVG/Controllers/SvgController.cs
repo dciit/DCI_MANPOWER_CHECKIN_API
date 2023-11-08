@@ -634,13 +634,19 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/getObjectlistbylayout")]
         public IActionResult GetObjectListByLayout([FromBody] MParamLayoutInfo param)
         {
+            //&& (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString()+"0")
+            
             List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.LayoutStatus == "ACTIVE" && o.LayoutCode == param.LayoutCode).ToList();
+            DateTime ctNow = DateTime.Now.AddHours(-8);
+            string ymd = ctNow.ToString("yyyyMMdd");
+            string ymd2 = ctNow.AddDays(1).ToString("yyyyMMdd");
 
             List<OtrqReq> oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
-                            && (o.Odate == param.dataDate || o.Odate == param.dataDate.AddDays(1))
-                            && (o.Rq == param.dataDate.Day.ToString() || o.Rq == $"{param.dataDate.Day.ToString()}0")).ToList();
+                            && (o.Odate == ctNow.Date || o.Odate == ctNow.AddDays(1).Date)
+                            && (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString() + "0")
+                            ).ToList();
 
-            var result = from obj in oObjects.OrderByDescending(b => b.ObjCode)
+            var result = from obj in oObjects.OrderBy(b => b.ObjCode)
                          join ot in oEmpOTs
                          on obj.EmpCode equals ot.Code into d2
                          from f in d2.DefaultIfEmpty()
@@ -669,7 +675,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                              obj.Mq,
                              obj.Sa,
                              Ot = (obj.EmpCode == "TRUE") ? (f.Code == null) ? "FALSE" : "TRUE" : "FALSE",
-                             obj.EmpImage
+                             obj.EmpImage,
+                             obj.EmpName
                          };
 
 
@@ -677,6 +684,208 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             return Ok(result);
 
         }
+
+        [HttpPost]
+        [Route("/mpck/getObjectlistbyCode")]
+        public IActionResult GetObjectListByCode([FromBody] MParamObjectCodeInfo param)
+        {            
+            List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.ObjStatus == "ACTIVE" && o.ObjCode == param.ObjCode).ToList();
+            DateTime ctNow = DateTime.Now.AddHours(-8);
+            List<OtrqReq> oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
+                            && (o.Odate == ctNow.Date || o.Odate == ctNow.AddDays(1).Date)
+                            && (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString()+"0")
+                            ).ToList();
+
+            var result = from obj in oObjects.OrderBy(b => b.ObjCode)
+                         join ot in oEmpOTs
+                         on obj.EmpCode equals ot.Code into d2
+                         from f in d2.DefaultIfEmpty()
+                         select new
+                         {
+                             obj.ObjCode,
+                             obj.LayoutCode,
+                             obj.ObjMasterId,
+                             obj.ObjType,
+                             obj.ObjTitle,
+                             obj.ObjSubtitle,
+                             obj.ObjPath,
+                             obj.ObjX,
+                             obj.ObjY,
+                             obj.ObjStatus,
+                             obj.EmpCode,
+                             obj.ObjLastCheckDt,
+                             obj.LayoutName,
+                             obj.LayoutSubName,
+                             obj.Factory,
+                             obj.Line,
+                             obj.SubLine,
+                             obj.LayoutStatus,
+                             obj.BypassMq,
+                             obj.BypassSa,
+                             obj.Mq,
+                             obj.Sa,
+                             Ot = (obj.EmpCode == "TRUE") ? (f.Code == null) ? "FALSE" : "TRUE" : "FALSE",
+                             obj.EmpImage,
+                             obj.EmpName
+                         };
+
+
+
+            return Ok(result);
+
+        }
+
+
+
+        [HttpPost]
+        [Route("/mpck/getObjectInfoByCode")]
+        public IActionResult GetObjectInfoByCode([FromBody] MParamObjectCodeInfo param)
+        {
+            //***** Object Info *******
+            List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.ObjStatus == "ACTIVE" && o.ObjCode == param.ObjCode).ToList();
+            object result = (dynamic)null;
+
+
+
+            //***** Employee Info *******
+            if (oObjects.Count > 0)
+            {
+                ViMpckObjectList oObject = oObjects[0];
+                List<MpckDictionary> oMQs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictType == "MQ").ToList();
+                List<MpckDictionary> oSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictType == "SA").ToList();
+                
+                List<TrLineProcess> oMQALLs = _contextDCI.TrLineProcess.Where(l => l.ProcType == "MQ").ToList();
+                List<SkcDictMstr> oSAALLs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
+
+                object arObj_MQ = new { };
+                if (oMQs.Count > 0)
+                {
+                    arObj_MQ = from mq in oMQs.OrderBy(b => b.DictCode)
+                               join mqall in oMQALLs
+                               on mq.DictCode equals mqall.ProcessCode 
+                               select new
+                               {
+                                   MQCode = mq.DictCode,
+                                   MQName = mqall.ProcessName
+                               };
+                }
+
+
+
+
+                object arObj_SA = new { };
+                if (oSAs.Count > 0)
+                {
+                    arObj_SA = from sa in oSAs.OrderBy(b => b.DictCode)
+                               join saall in oSAALLs
+                               on sa.DictCode equals saall.Code 
+                               select new
+                               {
+                                   SACode = sa.DictCode,
+                                   SAName = saall.DictDesc
+                               };
+                }
+
+                
+                if (oObject.EmpCode != "")
+                {
+                    Employee oEmp = _contxHRM.Employee.Where(e => e.Code == oObject.EmpCode).FirstOrDefault();
+
+                    if (oEmp != null)
+                    {
+                        var oEmpMQs = _contextDCI.ViTrTrainessLog.Where(tr => tr.EmpCode == oEmp.Code && tr.Result == "P" && tr.Status == "post").ToList().GroupBy(g => g.MqNo);
+                        var oEmpSAs = _contxMP.SkcLicenseTraining.Where(ct => ct.Empcode == oEmp.Code && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList().GroupBy(g => g.DictCode);
+
+                        object arEmp_MQ = new { };
+
+                        if (oEmpMQs.Count() > 0)
+                        {
+                            arEmp_MQ = from mq in oEmpMQs.OrderBy(b => b.Key)
+                                       join mqall in oMQALLs
+                                       on mq.Key equals mqall.ProcessCode 
+                                       select new
+                                       {
+                                           MQCode = mq.Key,
+                                           MQName = mqall.ProcessName
+                                       };
+                        }
+
+                        object arEmp_SA = new { };
+                        if (oEmpSAs.Count() > 0) {
+                            arEmp_SA = from sa in oEmpSAs.OrderBy(b => b.Key)
+                                       join saall in oSAALLs
+                                       on sa.Key equals saall.Code 
+                                       select new
+                                       {
+                                           SACode = sa.Key,
+                                           SAName = saall.DictDesc
+                                       };
+                        }
+
+
+                        result = from obj in oObjects
+                                     select new
+                                     {
+                                         obj.ObjCode,
+                                         obj.ObjTitle,
+                                         obj.ObjSubtitle,
+                                         obj.Factory,
+                                         obj.SubLine,
+                                         obj.Line,
+                                         obj.Ot,
+                                         obj.Mq,
+                                         obj.Sa,
+                                         obj.EmpCode,
+                                         obj.EmpName,
+                                         obj.EmpImage,
+                                         EmpJoin = Convert.ToDateTime(oEmp!.Join).ToString("dd/MMM/yyyy"),
+                                         EmpWorkDay = (DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays.ToString(),
+                                         EmpWorkYear = Math.Floor((DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays / 365).ToString(),
+                                         EmpPosit = oEmp.Posit,
+                                         ObjMQ = arObj_MQ,
+                                         ObjSA = arObj_SA,
+                                         EmpMQ = arEmp_MQ,
+                                         EmpSA = arEmp_SA,
+                                     };
+                    } // end check have employee
+                }
+                else
+                {
+                    result = from obj in oObjects
+                             select new
+                             {
+                                 obj.ObjCode,
+                                 obj.ObjTitle,
+                                 obj.ObjSubtitle,
+                                 obj.Factory,
+                                 obj.SubLine,
+                                 obj.Line,
+                                 obj.Ot,
+                                 obj.Mq,
+                                 obj.Sa,
+                                 obj.EmpCode,
+                                 obj.EmpName,
+                                 obj.EmpImage,
+                                 EmpJoin = "",
+                                 EmpWorkDay = "",
+                                 EmpWorkYear = "",
+                                 EmpPosit = "",
+                                 ObjMQ = arObj_MQ,
+                                 ObjSA = arObj_SA,
+                                 EmpMQ = new { },
+                                 EmpSA = new { },
+                             };
+                }
+
+            }
+
+
+            return Ok(result);
+
+        }
+
+
+
 
 
         [HttpPost]
@@ -717,7 +926,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     mObj.ObjPath = "";
                     mObj.ObjX = param.ObjX;
                     mObj.ObjY = param.ObjY;
-                    mObj.ObjStatus = "";
+                    mObj.ObjStatus = "ACTIVE";
                     mObj.EmpCode = "";
                     mObj.ObjLastCheckDt = DateTime.Now;
 
@@ -1027,7 +1236,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/checkInOut")]
         public IActionResult CheckInOut([FromBody] MParamCheckInOutInfo param)
         {
-            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode && o.ObjStatus == "ACTIVE").ToList();
 
             if (oObjs.Count > 0)
             {
@@ -1134,10 +1343,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     oLog.ObjCode = param.ObjCode;
 
                     _contxMP.MpckCheckInLog.Attach(oLog);
-                    _contxMP.Entry(oLog).State = EntityState.Modified;
+                    _contxMP.Entry(oLog).State = EntityState.Added;
                     int added = _contxMP.SaveChanges();
-
-
+                    
                     return (changed == 1) ? Ok(new { status = changed, msg="OK", mq=true, sa=true }) : Ok(new { status = "0", msg = "can not updated", mq=true, sa=true });
                 }
                 else

@@ -71,5 +71,7 @@ namespace API_DCI_DIAGRAM_SVG.Models
         public string Sa { get; set; } = null!;
         [StringLength(46)]
         public string EmpImage { get; set; } = null!;
+        [StringLength(202)]
+        public string EmpName { get; set; } = null!;
     }
 }

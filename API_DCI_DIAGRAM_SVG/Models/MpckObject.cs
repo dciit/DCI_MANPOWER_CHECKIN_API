@@ -44,5 +44,7 @@ namespace API_DCI_DIAGRAM_SVG.Models
         public string? EmpCode { get; set; }
         [Column("Obj_LastCheckDT", TypeName = "datetime")]
         public DateTime? ObjLastCheckDt { get; set; }
+        [Column("Obj_InsertDT", TypeName = "datetime")]
+        public DateTime? ObjInsertDt { get; set; }
     }
 }
