@@ -21,5 +21,7 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [Column("Mst_Status")]
         [StringLength(20)]
         public string? MstStatus { get; set; }
+        [Column("Mst_Order")]
+        public int? MstOrder { get; set; }
     }
 }

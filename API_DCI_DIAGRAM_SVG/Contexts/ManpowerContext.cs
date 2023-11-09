@@ -25,11 +25,10 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
         public virtual DbSet<MpckObjectMaster> MpckObjectMaster { get; set; } = null!;
         public virtual DbSet<SkcDictMstr> SkcDictMstr { get; set; } = null!;
         public virtual DbSet<SkcLicenseTraining> SkcLicenseTraining { get; set; } = null!;
+        public virtual DbSet<ViMpckCheckInOutLog> ViMpckCheckInOutLog { get; set; } = null!;
         public virtual DbSet<ViMpckDictionary> ViMpckDictionary { get; set; } = null!;
         public virtual DbSet<ViMpckObjectList> ViMpckObjectList { get; set; } = null!;
-
         public virtual DbSet<SpDCRunNbr> SpDCRunNbr { get; set; } = null!;
-
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -58,12 +57,23 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
             {
                 entity.HasKey(e => e.ObjMasterId)
                     .HasName("PK_LNS_OBJECT_MASTER");
+
+                entity.Property(e => e.MstOrder).HasDefaultValueSql("((0))");
             });
 
             modelBuilder.Entity<SkcLicenseTraining>(entity =>
             {
                 entity.HasKey(e => e.TrId)
                     .HasName("PK_SKC_LicenseTraning");
+            });
+
+            modelBuilder.Entity<ViMpckCheckInOutLog>(entity =>
+            {
+                entity.ToView("vi_MPCK_CheckInOutLog");
+
+                entity.Property(e => e.EmpName).UseCollation("SQL_Latin1_General_CP1_CI_AS");
+
+                entity.Property(e => e.Posit).UseCollation("SQL_Latin1_General_CP1_CI_AS");
             });
 
             modelBuilder.Entity<ViMpckDictionary>(entity =>

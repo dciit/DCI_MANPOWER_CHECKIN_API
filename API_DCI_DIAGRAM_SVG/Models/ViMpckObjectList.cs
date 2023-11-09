@@ -69,9 +69,13 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [StringLength(5)]
         [Unicode(false)]
         public string Sa { get; set; } = null!;
-        [StringLength(46)]
+        [StringLength(54)]
         public string EmpImage { get; set; } = null!;
         [StringLength(202)]
         public string EmpName { get; set; } = null!;
+        [Column("Mst_Order")]
+        public int? MstOrder { get; set; }
+        [Column("OBJ_SVG", TypeName = "text")]
+        public string? ObjSvg { get; set; }
     }
 }
