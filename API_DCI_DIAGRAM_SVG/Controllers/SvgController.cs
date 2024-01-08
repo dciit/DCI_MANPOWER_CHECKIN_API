@@ -17,7 +17,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
     public class SvgController : Controller
     {
         private readonly DBDCI _contextDCI;
-        private readonly ManpowerContext _contxMP; 
+        private readonly ManpowerContext _contxMP;
         private readonly HRMContext _contxHRM;
         ClsHelper oHelper = new ClsHelper();
 
@@ -574,7 +574,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
             try
             {
-                if(nbr.Count > 0)
+                if (nbr.Count > 0)
                 {
                     MpckLayout oLayout = new MpckLayout();
                     oLayout.LayoutCode = nbr[0].RunNbr;
@@ -598,10 +598,11 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 else
                 {
                     return Ok(new { status = "0", msg = "error gen nbr" });
-                }                
+                }
             }
-            catch {
-                return Ok(new { status = "0", msg="error" });               
+            catch
+            {
+                return Ok(new { status = "0", msg = "error" });
             }
         }
 
@@ -635,7 +636,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult GetObjectListByLayout([FromBody] MParamLayoutInfo param)
         {
             //&& (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString()+"0")
-            
+
             List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.LayoutStatus == "ACTIVE" && o.LayoutCode == param.LayoutCode).ToList();
             DateTime ctNow = DateTime.Now.AddHours(-8);
             string ymd = ctNow.ToString("yyyyMMdd");
@@ -690,12 +691,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [HttpPost]
         [Route("/mpck/getObjectlistbyCode")]
         public IActionResult GetObjectListByCode([FromBody] MParamObjectCodeInfo param)
-        {            
+        {
             List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.ObjStatus == "ACTIVE" && o.ObjCode == param.ObjCode).ToList();
             DateTime ctNow = DateTime.Now.AddHours(-8);
             List<OtrqReq> oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
-                            && (o.Odate == ctNow.Date || o.Odate == ctNow.AddDays(1).Date) && o.Code == oObjects[0].EmpCode 
-                            && (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString()+"0")
+                            && (o.Odate == ctNow.Date || o.Odate == ctNow.AddDays(1).Date) && o.Code == oObjects[0].EmpCode
+                            && (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString() + "0")
                             ).ToList();
 
             var result = from obj in oObjects.OrderBy(b => b.MstOrder)
@@ -757,13 +758,13 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 ViMpckObjectList oObject = oObjects[0];
                 List<MpckDictionary> oMQs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictType == "MQ").ToList();
                 List<MpckDictionary> oSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictType == "SA").ToList();
-                
+
                 List<TrLineProcess> oMQALLs = _contextDCI.TrLineProcess.Where(l => l.ProcType == "MQ").ToList();
                 List<SkcDictMstr> oSAALLs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
 
                 //****** Log ******
                 object arLogObj = new { };
-                arLogObj = _contxMP.ViMpckCheckInOutLog.Where(l => l.ObjCode == param.ObjCode).ToList().Take(10).OrderByDescending(o=>o.CkdateTime);
+                arLogObj = _contxMP.ViMpckCheckInOutLog.Where(l => l.ObjCode == param.ObjCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
 
 
                 object arObj_MQ = new { };
@@ -771,7 +772,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 {
                     arObj_MQ = from mq in oMQs.OrderBy(b => b.DictCode)
                                join mqall in oMQALLs
-                               on mq.DictCode equals mqall.ProcessCode 
+                               on mq.DictCode equals mqall.ProcessCode
                                select new
                                {
                                    MQCode = mq.DictCode,
@@ -787,7 +788,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 {
                     arObj_SA = from sa in oSAs.OrderBy(b => b.DictCode)
                                join saall in oSAALLs
-                               on sa.DictCode equals saall.Code 
+                               on sa.DictCode equals saall.Code
                                select new
                                {
                                    SACode = sa.DictCode,
@@ -795,8 +796,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                };
                 }
 
-                
-                if (oObject.EmpCode != "")
+
+                if (oObject.EmpCode != "" && oObject.EmpCode != "-")
                 {
                     Employee oEmp = _contxHRM.Employee.Where(e => e.Code == oObject.EmpCode).FirstOrDefault();
 
@@ -811,7 +812,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                         {
                             arEmp_MQ = from mq in oEmpMQs.OrderBy(b => b.Key)
                                        join mqall in oMQALLs
-                                       on mq.Key equals mqall.ProcessCode 
+                                       on mq.Key equals mqall.ProcessCode
                                        select new
                                        {
                                            MQCode = mq.Key,
@@ -820,10 +821,11 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                         }
 
                         object arEmp_SA = new { };
-                        if (oEmpSAs.Count() > 0) {
+                        if (oEmpSAs.Count() > 0)
+                        {
                             arEmp_SA = from sa in oEmpSAs.OrderBy(b => b.Key)
                                        join saall in oSAALLs
-                                       on sa.Key equals saall.Code 
+                                       on sa.Key equals saall.Code
                                        select new
                                        {
                                            SACode = sa.Key,
@@ -838,31 +840,31 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
 
                         result = from obj in oObjects
-                                     select new
-                                     {
-                                         obj.ObjCode,
-                                         obj.ObjTitle,
-                                         obj.ObjSubtitle,
-                                         obj.Factory,
-                                         obj.SubLine,
-                                         obj.Line,
-                                         obj.Ot,
-                                         obj.Mq,
-                                         obj.Sa,
-                                         obj.EmpCode,
-                                         obj.EmpName,
-                                         obj.EmpImage,
-                                         EmpJoin = Convert.ToDateTime(oEmp!.Join).ToString("dd/MMM/yyyy"),
-                                         EmpWorkDay = (DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays.ToString(),
-                                         EmpWorkYear = Math.Floor((DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays / 365).ToString(),
-                                         EmpPosit = oEmp.Posit,
-                                         ObjMQ = arObj_MQ,
-                                         ObjSA = arObj_SA,
-                                         ObjLog = arLogObj,
-                                         EmpMQ = arEmp_MQ,
-                                         EmpSA = arEmp_SA,
-                                         EmpLog = arLogObj
-                                     };
+                                 select new
+                                 {
+                                     obj.ObjCode,
+                                     obj.ObjTitle,
+                                     obj.ObjSubtitle,
+                                     obj.Factory,
+                                     obj.SubLine,
+                                     obj.Line,
+                                     obj.Ot,
+                                     obj.Mq,
+                                     obj.Sa,
+                                     obj.EmpCode,
+                                     obj.EmpName,
+                                     obj.EmpImage,
+                                     EmpJoin = Convert.ToDateTime(oEmp!.Join).ToString("dd/MMM/yyyy"),
+                                     EmpWorkDay = (DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays.ToString(),
+                                     EmpWorkYear = Math.Floor((DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays / 365).ToString(),
+                                     EmpPosit = oEmp.Posit,
+                                     ObjMQ = arObj_MQ,
+                                     ObjSA = arObj_SA,
+                                     ObjLog = arLogObj,
+                                     EmpMQ = arEmp_MQ,
+                                     EmpSA = arEmp_SA,
+                                     EmpLog = arLogObj
+                                 };
                     } // end check have employee
                 }
                 else
@@ -899,10 +901,6 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             return Ok(result);
 
         }
-
-
-
-
 
         [HttpPost]
         [Route("/mpck/getObjectlist")]
@@ -951,16 +949,16 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     _contxMP.Entry(mObj).State = EntityState.Added;
                     int res = _contxMP.SaveChanges();
 
-                    return Ok(new { status = res, msg= nbr[0].RunNbr });
+                    return Ok(new { status = res, msg = nbr[0].RunNbr });
                 }
                 else
                 {
-                    return Ok(new { status = "0", msg="error gen nbr" });
+                    return Ok(new { status = "0", msg = "error gen nbr" });
                 }
             }
             catch
             {
-                return Ok(new { status = "0", msg="error" });
+                return Ok(new { status = "0", msg = "error" });
             }
 
         }
@@ -988,7 +986,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
 
         }
-         
+
         [HttpPost]
         [Route("/mpck/editObjectTitle")]
         public IActionResult EditTitleObject([FromBody] MParamObjectEditTitleInfo param)
@@ -1038,6 +1036,25 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             }
         }
 
+        [HttpPost]
+        [Route("/mpck/management")]
+        public IActionResult GetFactory([FromBody] MParamFactory param)
+        {
+            List<MOutputManagementLayout> listLayout = new List<MOutputManagementLayout>();
+            var listFactory = _contxMP.MpckLayout.Where(x => x.Factory == param.Factory && x.LayoutStatus == "ACTIVE").ToList();
+            foreach (var item in listFactory)
+            {
+                MOutputManagementLayout oLayout = new MOutputManagementLayout();
+                oLayout.layoutName = item.LayoutName;
+                oLayout.layoutCode = item.LayoutCode;
+                List<MOutputManagementObject> itemObj = new List<MOutputManagementObject>();
+                var oListObjs = _contxMP.MpckObject.Where(x => x.LayoutCode == item.LayoutCode && x.ObjType == "MP" && x.ObjTitle != "" && x.ObjStatus == "ACTIVE").ToList();
+                oLayout.listObj = oListObjs;
+                listLayout.Add(oLayout);
+            }
+            return Ok(listLayout);
+        }
+
 
 
         #endregion
@@ -1056,9 +1073,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             }
             else
             {
-                oMstObjs = _contxMP.MpckObjectMaster.Where( l => l.ObjMasterId == param.ObjCode).ToList();
+                oMstObjs = _contxMP.MpckObjectMaster.Where(l => l.ObjMasterId == param.ObjCode).ToList();
             }
-            
+
             return Ok(oMstObjs);
 
         }
@@ -1069,7 +1086,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         {
             string dockey = "MPCK_MASTER";
             List<SpDCRunNbr> nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
-            if(nbr.Count > 0)
+            if (nbr.Count > 0)
             {
                 return Ok(new { DocNbr = nbr[0].RunNbr });
             }
@@ -1077,7 +1094,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 return BadRequest(new { DocNbr = "error" });
             }
-            
+
         }
 
         [HttpPost]
@@ -1101,7 +1118,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             }
             catch
             {
-                return Ok(new { status = "0", msg="error" });            
+                return Ok(new { status = "0", msg = "error" });
             }
         }
 
@@ -1183,7 +1200,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
             List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictCode == param.DictCode && d.DictType == param.DictType).ToList();
 
-            if (oMQSAs.Count > 0)
+            if (oMQSAs.Count == 0)
             {
                 MpckDictionary oDict = new MpckDictionary();
                 oDict.DictType = param.DictType;
@@ -1203,7 +1220,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             }
             else
             {
-                return Ok(new { status = "0", msg ="duplicate" });
+                return Ok(new { status = "0", msg = "duplicate" });
             }
         }
 
@@ -1232,10 +1249,11 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
         [HttpPost]
         [Route("/mpck/getSAList")]
-        public IActionResult GetSAList() {
+        public IActionResult GetSAList()
+        {
 
-            List<SkcDictMstr> oSAs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus  == true && d.DictType == "LICENSE").ToList();
-            return Ok(oSAs);            
+            List<SkcDictMstr> oSAs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
+            return Ok(oSAs);
         }
 
 
@@ -1257,7 +1275,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult CheckInOut([FromBody] MParamCheckInOutInfo param)
         {
             List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode && o.ObjStatus == "ACTIVE").ToList();
-            
+
 
 
             if (oObjs.Count > 0)
@@ -1285,8 +1303,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
 
 
-                        bool byPassMQ = (oLayout.BypassMq == "TRUE") ? true: false;
-                        bool byPassSA = (oLayout.BypassSa == "TRUE") ? true: false;
+                        bool byPassMQ = (oLayout.BypassMq == "TRUE") ? true : false;
+                        bool byPassSA = (oLayout.BypassSa == "TRUE") ? true : false;
 
 
                         //****** check in ******
@@ -1296,7 +1314,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                             //***** SET Default ******
                             foreach (MpckDictionary oMQSA in oMQSAs)
                             {
-                                oMQSA.DictName = "FALSE";                                
+                                oMQSA.DictName = "FALSE";
                             }
 
                             //***************************************
@@ -1324,7 +1342,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                                 oMQSA.DictName = "TRUE";
                                             }
                                         }
-                                    }                                    
+                                    }
                                 }
                                 else if (oMQSA.DictType == "SA")
                                 {
@@ -1341,15 +1359,15 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                             {
                                                 oMQSA.DictName = "TRUE";
                                             }
-                                        }                                        
+                                        }
                                     }
                                 }
                             } // end foreach
-                            //***************************************
-                            //      CHECK EMPLOYEE HAVE MQ / SA 
-                            //***************************************
+                              //***************************************
+                              //      CHECK EMPLOYEE HAVE MQ / SA 
+                              //***************************************
 
-                            
+
 
                         } // end if check have MQ/SA
 
@@ -1362,12 +1380,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                         }
                         else
                         {
-                            if ((!byPassMQ && byPassSA) && oMQSAs.Where(m=>m.DictType=="MQ").Count() > 0 && oMQSAs.Where(m => m.DictName == "FALSE" && m.DictType == "MQ").Count() == 0)
+                            if ((!byPassMQ && byPassSA) && oMQSAs.Where(m => m.DictType == "MQ").Count() > 0 && oMQSAs.Where(m => m.DictName == "FALSE" && m.DictType == "MQ").Count() == 0)
                             {
                                 stsUpd = true;
                                 oObjUpd.EmpCode = param.EmpCode;
                             }
-                            else  if ((!byPassSA && byPassMQ) && oMQSAs.Where(m => m.DictType == "SA").Count() > 0 && oMQSAs.Where(m => m.DictName == "FALSE" && m.DictType == "SA").Count() == 0)
+                            else if ((!byPassSA && byPassMQ) && oMQSAs.Where(m => m.DictType == "SA").Count() > 0 && oMQSAs.Where(m => m.DictName == "FALSE" && m.DictType == "SA").Count() == 0)
                             {
                                 stsUpd = true;
                                 oObjUpd.EmpCode = param.EmpCode;
@@ -1424,8 +1442,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     _contxMP.MpckCheckInLog.Attach(oLog);
                     _contxMP.Entry(oLog).State = EntityState.Added;
                     int added = _contxMP.SaveChanges();
-                    
-                    return (changed == 1) ? Ok(new { status = changed, msg="OK" }) : Ok(new { status = "0", msg = "can not updated" });
+
+                    return (changed == 1) ? Ok(new { status = changed, msg = "OK" }) : Ok(new { status = "0", msg = "can not updated" });
                 }
                 else
                 {

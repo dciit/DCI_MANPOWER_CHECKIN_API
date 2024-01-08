@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "744cb9lTkohnuSKLLIEkuMEWh4FfyuQmmV58rp/fkQKXWzhkbnug3uJVv0gh/lNyeQ1Em4ugwyIkRw8H3ZthSg==",
+  "dgSpecHash": "nMTVh/X7JjDOh93bR5VSTLWTY+JqPiAgzuke2klY1om9X0qmC4sWzteiLjv23QPhnvsZeD8AQGX0sgQLRisdCg==",
   "success": true,
   "projectFilePath": "D:\\git\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj",
   "expectedPackageFiles": [
@@ -52,7 +52,11 @@
     "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\system.security.permissions\\4.7.0\\system.security.permissions.4.7.0.nupkg.sha512",
     "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\system.security.principal.windows\\4.7.0\\system.security.principal.windows.4.7.0.nupkg.sha512",
     "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\system.text.encoding.codepages\\4.7.0\\system.text.encoding.codepages.4.7.0.nupkg.sha512",
-    "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\system.windows.extensions\\4.7.0\\system.windows.extensions.4.7.0.nupkg.sha512"
+    "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\system.windows.extensions\\4.7.0\\system.windows.extensions.4.7.0.nupkg.sha512",
+    "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\6.0.25\\microsoft.windowsdesktop.app.ref.6.0.25.nupkg.sha512",
+    "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\microsoft.netcore.app.ref\\6.0.25\\microsoft.netcore.app.ref.6.0.25.nupkg.sha512",
+    "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\6.0.25\\microsoft.aspnetcore.app.ref.6.0.25.nupkg.sha512",
+    "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\6.0.25\\microsoft.netcore.app.host.win-x64.6.0.25.nupkg.sha512"
   ],
   "logs": []
 }

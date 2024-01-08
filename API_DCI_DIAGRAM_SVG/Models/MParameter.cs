@@ -4,11 +4,15 @@ namespace API_DCI_DIAGRAM_SVG.Models
 {
     public class MParameter
     {
+        public class MParamFactory
+        {
+            public string Factory { get; set; }
+        }
         public class MParamLayoutInfo
         {
             public string LayoutCode { get; set; }
         }
-        
+
 
         public class MParamObjectAddInfo
         {
@@ -47,7 +51,7 @@ namespace API_DCI_DIAGRAM_SVG.Models
 
         public class MParamObjectEditTitleInfo
         {
-            public string ObjCode { get; set; }            
+            public string ObjCode { get; set; }
             public string ObjTitle { get; set; }
             public string ObjSubtitle { get; set; }
         }
@@ -56,10 +60,10 @@ namespace API_DCI_DIAGRAM_SVG.Models
         {
             public string ObjCode { get; set; }
             public string EmpCode { get; set; }
-            public string Ckdate { get; set; }            
+            public string Ckdate { get; set; }
             public string Ckshift { get; set; }
             public string Cktype { get; set; }
-            
+
         }
 
         public class MParamDictInfo
@@ -74,9 +78,25 @@ namespace API_DCI_DIAGRAM_SVG.Models
 
         public class MParamDictSearchInfo
         {
-            public string SearchCode { get; set; }            
+            public string SearchCode { get; set; }
             public string SearchType { get; set; }
 
+        }
+
+        public class MOutputManagement
+        {
+            public List<MParamFactory> listLayout { get; set; }
+        }
+        public class MOutputManagementLayout
+        {
+            public string? layoutCode { get; set; } 
+            public string? layoutName {  get; set; }
+            public List<MpckObject> listObj { get; set; }
+        }
+
+        public class MOutputManagementObject
+        {
+            public string ObjCode { get; set; }
         }
 
     }
