@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\API_DCI_DIAGRAM_SVG.props" />
+</Project>

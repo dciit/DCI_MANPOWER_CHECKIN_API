@@ -65,6 +65,43 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
             {
                 entity.HasKey(e => e.TrId)
                     .HasName("PK_SKC_LicenseTraning");
+                entity.ToTable("SKC_LicenseTraining");
+
+                entity.Property(e => e.TrId).HasColumnName("TR_ID");
+
+                entity.Property(e => e.AlertDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("ALERT_DATE");
+
+                entity.Property(e => e.CreateBy)
+                    .HasMaxLength(30)
+                    .HasColumnName("CREATE_BY");
+
+                entity.Property(e => e.CreateDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("CREATE_DATE");
+
+                entity.Property(e => e.DictCode)
+                    .HasMaxLength(30)
+                    .HasColumnName("DICT_CODE");
+
+                entity.Property(e => e.EffectiveDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("EFFECTIVE_DATE");
+
+                entity.Property(e => e.Empcode)
+                    .HasMaxLength(10)
+                    .HasColumnName("EMPCODE");
+
+                entity.Property(e => e.ExpiredDate)
+                    .HasColumnType("datetime")
+                    .HasColumnName("EXPIRED_DATE");
+
+                entity.Property(e => e.RefCode)
+                    .HasMaxLength(10)
+                    .HasColumnName("REF_CODE");
+
+                entity.Property(e => e.TrStatus).HasColumnName("TR_STATUS");
             });
 
             modelBuilder.Entity<ViMpckCheckInOutLog>(entity =>

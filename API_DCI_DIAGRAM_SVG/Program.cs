@@ -7,7 +7,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<DBSCM>();
 builder.Services.AddDbContext<DBDCI>();
 builder.Services.AddDbContext<HRMContext>();
 builder.Services.AddDbContext<ManpowerContext>();

@@ -1,16 +1,8 @@
 ﻿using API_DCI_DIAGRAM_SVG.Contexts;
 using API_DCI_DIAGRAM_SVG.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
 using static API_DCI_DIAGRAM_SVG.Models.MParameter;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Channels;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace API_DCI_DIAGRAM_SVG.Controllers
 {
@@ -20,7 +12,6 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         private readonly ManpowerContext _contxMP;
         private readonly HRMContext _contxHRM;
         ClsHelper oHelper = new ClsHelper();
-
         public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM)
         {
             _contextDCI = contextDCI;
@@ -646,7 +637,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                             && (o.Odate == ctNow.Date || o.Odate == ctNow.AddDays(1).Date)
                             && (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString() + "0")
                             ).ToList();
-
+            Service serv = new Service(_contextDCI, _contxMP, _contxHRM);
             var result = from obj in oObjects.OrderBy(b => b.MstOrder)
                          join ot in oEmpOTs
                          on obj.EmpCode equals ot.Code into d2
@@ -679,11 +670,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                              obj.EmpImage,
                              obj.EmpName,
                              obj.ObjSvg,
-                             obj.MstOrder
+                             obj.MstOrder,
+                             manskill = serv.getCounter(obj.ObjCode).counter
                          };
-
-
-
             return Ok(result);
 
         }
@@ -838,7 +827,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                         object arLogEmp = new { };
                         arLogEmp = _contxMP.ViMpckCheckInOutLog.Where(l => l.EmpCode == oObject.EmpCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
 
-
+                        Service serv = new Service(_contextDCI, _contxMP, _contxHRM);
                         result = from obj in oObjects
                                  select new
                                  {
@@ -863,7 +852,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                      ObjLog = arLogObj,
                                      EmpMQ = arEmp_MQ,
                                      EmpSA = arEmp_SA,
-                                     EmpLog = arLogObj
+                                     EmpLog = arLogObj,
+                                     manSkill = serv.getCounter(obj.ObjCode),
                                  };
                     } // end check have employee
                 }
@@ -893,7 +883,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                  ObjLog = arLogObj,
                                  EmpMQ = new { },
                                  EmpSA = new { },
-                                 EmpLog = new { }
+                                 EmpLog = new { },
+                                 manSkill = 0
                              };
                 }
             }
@@ -1460,7 +1451,19 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
         #endregion
 
-
+        [HttpPost]
+        [Route("/mpck/getManSkills")]
+        public IActionResult GetManSkills([FromBody] MModels.MManSkill obj)
+        {
+            string objCode = obj.objCode;
+            MModels.MManSkill resp = new MModels.MManSkill();
+            Service serv = new Service(_contextDCI, _contxMP, _contxHRM);
+            if (objCode != null)
+            {
+                resp = serv.getCounter(objCode);
+            }
+            return Ok(resp);
+        }
 
 
 
