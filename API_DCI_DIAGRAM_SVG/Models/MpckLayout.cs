@@ -33,6 +33,10 @@ namespace API_DCI_DIAGRAM_SVG.Models
         public string? BypassSa { get; set; }
         [StringLength(5)]
         public string? UpdateBy { get; set; }
+
+
+        public double? Width { get; set; }   
+        public double? Height { get; set; }
         /// <summary>
         /// CURRENT_TIMESTAMP
         /// </summary>
