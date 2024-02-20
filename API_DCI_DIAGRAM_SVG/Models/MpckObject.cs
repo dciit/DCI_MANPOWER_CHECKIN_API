@@ -46,5 +46,25 @@ namespace API_DCI_DIAGRAM_SVG.Models
         public DateTime? ObjLastCheckDt { get; set; }
         [Column("Obj_InsertDT", TypeName = "datetime")]
         public DateTime? ObjInsertDt { get; set; }
+        [Column("Obj_Picture")]
+        [StringLength(200)]
+        public string? ObjPicture { get; set; }
+        [Column("Obj_Width")]
+        public int? ObjWidth { get;set; }
+        [Column("Obj_Height")]
+        public int? ObjHeight { get;set; }
+        [Column("Obj_BackgroundColor")]
+        [StringLength(10)]
+        public string? ObjBackgroundColor { get; set; }
+        [Column("Obj_BorderColor")]
+        [StringLength(10)]
+        public string? ObjBorderColor { get; set; }
+        [Column("Obj_Priority")]
+        public int? ObjPriority { get; set; }
+
+        [Column("Obj_Position")]
+        [StringLength(10)]
+        public string? ObjPosition { get; set; }
+
     }
 }

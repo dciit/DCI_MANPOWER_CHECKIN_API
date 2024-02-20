@@ -10,6 +10,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DBDCI>();
 builder.Services.AddDbContext<HRMContext>();
 builder.Services.AddDbContext<ManpowerContext>();
+builder.Services.AddDbContext<DBPDB>();
 builder.Services.AddCors(options => options.AddPolicy("Cors", builder =>
 {
     builder

@@ -24,6 +24,8 @@ namespace API_DCI_DIAGRAM_SVG.Models
             public string ObjSubtitle { get; set; }
             public double ObjX { get; set; }
             public double ObjY { get; set; }
+            public int? ObjWidth { get; set; }
+            public int? ObjHeight { get; set; }
 
             //public string ObjStatus
             //EmpCode
@@ -89,8 +91,8 @@ namespace API_DCI_DIAGRAM_SVG.Models
         }
         public class MOutputManagementLayout
         {
-            public string? layoutCode { get; set; } 
-            public string? layoutName {  get; set; }
+            public string? layoutCode { get; set; }
+            public string? layoutName { get; set; }
             public List<MpckObject> listObj { get; set; }
         }
 

@@ -31,6 +31,11 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [Column("BypassSA")]
         [StringLength(10)]
         public string? BypassSa { get; set; }
+
+        [Column("BoardId")]
+        [StringLength(5)]
+        public string? BoardId { get; set; }
+
         [StringLength(5)]
         public string? UpdateBy { get; set; }
 

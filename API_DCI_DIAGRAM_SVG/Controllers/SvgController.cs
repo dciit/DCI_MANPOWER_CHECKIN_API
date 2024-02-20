@@ -3,6 +3,7 @@ using API_DCI_DIAGRAM_SVG.Models;
 using Microsoft.AspNetCore.Mvc;
 using static API_DCI_DIAGRAM_SVG.Models.MParameter;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace API_DCI_DIAGRAM_SVG.Controllers
 {
@@ -11,13 +12,23 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         private readonly DBDCI _contextDCI;
         private readonly ManpowerContext _contxMP;
         private readonly HRMContext _contxHRM;
+        private readonly DBPDB _contextPDB;
         ClsHelper oHelper = new ClsHelper();
-        public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM)
+
+        public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM, DBPDB contextPDB)
         {
             _contextDCI = contextDCI;
             _contxMP = contxMP;
             _contxHRM = contxHRM;
+            _contextPDB = contextPDB;
         }
+
+        //public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM)
+        //{
+        //    _contextDCI = contextDCI;
+        //    _contxMP = contxMP;
+        //    _contxHRM = contxHRM;
+        //}
 
         [HttpGet]
         [Route("/master/equipment")]
@@ -638,7 +649,24 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                             && (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString() + "0")
                             ).ToList();
             Service serv = new Service(_contextDCI, _contxMP, _contxHRM);
-            var result = from obj in oObjects.OrderBy(b => b.MstOrder)
+            if (oObjects.FirstOrDefault(x => x.ObjPriority != 0) == null)
+            {
+                int priority = 0;
+                foreach (ViMpckObjectList item in oObjects.OrderBy(b => b.MstOrder).ToList())
+                {
+                    MpckObject itemContext = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == item.ObjCode);
+                    if (itemContext != null)
+                    {
+                        itemContext.ObjPriority = priority;
+                        _contxMP.MpckObject.Update(itemContext);
+                        priority++;
+                    }
+                }
+                _contxMP.SaveChanges();
+            }
+
+            oObjects = oObjects.FirstOrDefault(x => x.ObjPriority != 0) == null ? oObjects.OrderBy(b => b.MstOrder).ToList() : oObjects.OrderBy(b => b.ObjPriority).ToList();
+            var result = from obj in oObjects
                          join ot in oEmpOTs
                          on obj.EmpCode equals ot.Code into d2
                          from f in d2.DefaultIfEmpty()
@@ -671,9 +699,19 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                              obj.EmpName,
                              obj.ObjSvg,
                              obj.MstOrder,
-                             manskill = serv.getCounter(obj.ObjCode).counter
+                             manskill = serv.getCounter(obj.ObjCode).counter,
+                             obj.ObjPicture,
+                             objSA = serv.getSAofObj(obj.ObjCode),
+                             objMQ = serv.getMQofObj(obj.ObjCode),
+                             obj.ObjWidth,
+                             obj.ObjHeight,
+                             obj.ObjBackgroundColor,
+                             obj.ObjBorderColor,
+                             obj.ObjPriority,
+                             sync = false,
+                             obj.ObjPosition
                          };
-            return Ok(result);
+            return Ok(result.OrderByDescending(x => x.ObjPriority).ToList());
 
         }
 
@@ -720,7 +758,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                              obj.EmpImage,
                              obj.EmpName,
                              obj.ObjSvg,
-                             obj.MstOrder
+                             obj.MstOrder,
+                             obj.ObjPicture,
+                             obj.ObjPosition
                          };
 
 
@@ -755,7 +795,16 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 object arLogObj = new { };
                 arLogObj = _contxMP.ViMpckCheckInOutLog.Where(l => l.ObjCode == param.ObjCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
 
-
+                //******* LOG EMP *****/
+                MpckObject oObj = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == param.ObjCode);
+                object arLogEmpObj = new { };
+                if (oObj != null)
+                {
+                    if (oObj.EmpCode != "")
+                    {
+                        arLogObj = _contxMP.ViMpckCheckInOutLog.Where(l => l.EmpCode == oObj.EmpCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
+                    }
+                }
                 object arObj_MQ = new { };
                 if (oMQs.Count > 0)
                 {
@@ -768,10 +817,6 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                    MQName = mqall.ProcessName
                                };
                 }
-
-
-
-
                 object arObj_SA = new { };
                 if (oSAs.Count > 0)
                 {
@@ -852,8 +897,15 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                      ObjLog = arLogObj,
                                      EmpMQ = arEmp_MQ,
                                      EmpSA = arEmp_SA,
-                                     EmpLog = arLogObj,
+                                     EmpLog = arLogEmpObj,
                                      manSkill = serv.getCounter(obj.ObjCode),
+                                     obj.ObjPicture,
+                                     obj.ObjWidth,
+                                     obj.ObjHeight,
+                                     obj.ObjBackgroundColor,
+                                     obj.ObjBorderColor,
+                                     obj.ObjType,
+                                     obj.ObjPosition
                                  };
                     } // end check have employee
                 }
@@ -884,7 +936,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                  EmpMQ = new { },
                                  EmpSA = new { },
                                  EmpLog = new { },
-                                 manSkill = 0
+                                 manSkill = 0,
+                                 obj.ObjWidth,
+                                 obj.ObjHeight,
+                                 obj.ObjBackgroundColor,
+                                 obj.ObjBorderColor,
+                                 obj.ObjType
                              };
                 }
             }
@@ -921,6 +978,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 if (nbr.Count > 0)
                 {
+                    MpckObject contentLast = _contxMP.MpckObject.OrderByDescending(x => x.ObjPriority).FirstOrDefault();
+                    int? priority = contentLast != null ? contentLast.ObjPriority + 1 : 0;
                     MpckObject mObj = new MpckObject();
                     mObj.ObjCode = nbr[0].RunNbr;
                     mObj.LayoutCode = param.LayoutCode;
@@ -935,11 +994,16 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     mObj.EmpCode = "";
                     mObj.ObjLastCheckDt = DateTime.Now;
                     mObj.ObjInsertDt = DateTime.Now;
-
+                    mObj.ObjPicture = "";
+                    mObj.ObjWidth = param.ObjWidth;
+                    mObj.ObjHeight = param.ObjHeight;
+                    mObj.ObjBackgroundColor = "";
+                    mObj.ObjBorderColor = "";
+                    mObj.ObjPriority = priority;
+                    mObj.ObjPosition = "OP";
                     _contxMP.MpckObject.Attach(mObj);
                     _contxMP.Entry(mObj).State = EntityState.Added;
                     int res = _contxMP.SaveChanges();
-
                     return Ok(new { status = res, msg = nbr[0].RunNbr });
                 }
                 else
@@ -1266,18 +1330,10 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult CheckInOut([FromBody] MParamCheckInOutInfo param)
         {
             List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode && o.ObjStatus == "ACTIVE").ToList();
-
-
-
             if (oObjs.Count > 0)
             {
                 MpckObject oObjUpd = oObjs[0];
-
-
-
                 MpckLayout oLayout = _contxMP.MpckLayout.Where(l => l.LayoutCode == oObjUpd.LayoutCode).FirstOrDefault() ?? new MpckLayout();
-
-
                 bool stsUpd = false;
                 if (param.Cktype == "IN")
                 {
@@ -1460,13 +1516,285 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             Service serv = new Service(_contextDCI, _contxMP, _contxHRM);
             if (objCode != null)
             {
-                resp = serv.getCounter(objCode);
+                resp = serv.GetEmployeeListInMQSA(objCode);
             }
             return Ok(resp);
         }
 
+        [HttpPost]
+        [Route("/mpck/setFiles")]
+        public async Task<IActionResult> SetFiles(MFiles param)
+        {
+            var file = param.files;
+            string objCode = param.objCode;
+            string surn = file.FileName.Split(".").Last();
+            string fac = param.fac;
+            string line = param.line;
+            string fileName = $"{objCode}.{surn.ToLower()}";
+            string parentPath = $"..\\DCI_MANPOWER_APP";
+            string targetPath = $"\\upload\\FAC{fac}\\LINE{line}";
+            string currentPath = $"{parentPath}{targetPath}";
+            string newPathFile = $"{currentPath}\\{fileName}";
+            if (!Directory.Exists(currentPath))
+            {
+                Directory.CreateDirectory(currentPath);
+            }
+            if (System.IO.File.Exists(newPathFile))
+            {
+                System.IO.File.Delete(newPathFile);
+            }
+            using (Stream stream = new FileStream(newPathFile, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            var obj = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == objCode);
+            if (obj != null)
+            {
+                var newObject = obj;
+                newObject.ObjPicture = $"http://dciweb.dci.daikin.co.jp/dcimanpower/{targetPath}/{fileName}".Replace("/\\", "/").Replace("\\", "/");
+                _contxMP.MpckObject.Update(newObject);
+                int res = _contxMP.SaveChanges();
+                return Ok(new
+                {
+                    status = res
+                });
+            }
+            else
+            {
+                return Ok(new
+                {
+                    status = false
+                });
+            }
+            return Ok(newPathFile);
+        }
+
+        [HttpPost]
+        [Route("/mpck/updateObject")]
+        public async Task<IActionResult> UpdateObject([FromBody] ViMpckObjectList param)
+        {
+            MpckObject context = await _contxMP.MpckObject.FirstOrDefaultAsync(x => x.ObjCode == param.ObjCode);
+            if (context != null)
+            {
+                context.ObjBackgroundColor = param.ObjBackgroundColor;
+                context.ObjBorderColor = param.ObjBorderColor;
+                context.ObjTitle = param.ObjTitle;
+                context.ObjSubtitle = param.ObjSubtitle;
+                context.ObjType = param.ObjType;
+                context.ObjWidth = param.ObjWidth;
+                context.ObjHeight = param.ObjHeight;
+                _contxMP.MpckObject.Update(context);
+                int update = await _contxMP.SaveChangesAsync();
+                if (update > 0)
+                {
+                    return Ok(new
+                    {
+                        status = update,
+                        obj = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == param.ObjCode)
+                    });
+                }
+                else
+                {
+                    return Ok(new
+                    {
+                        status = false
+                    });
+                }
+            }
+            else
+            {
+                return Ok(new
+                {
+                    status = false
+                });
+            }
+        }
+
+        [HttpPost]
+        [Route("/mpck/updatePriority")]
+        public async Task<IActionResult> UpdateObject([FromBody] MUpdatePriority param)
+        {
+            string objCode = param.objCode;
+            string action = param.objAction;
+            bool status = false;
+            MpckObject content = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == objCode);
+            if (content != null)
+            {
+                string layoutCode = content.LayoutCode;
+                int? priority = content.ObjPriority;
+                if (action == "up")
+                {
+                    if (priority != null)
+                    {
+                        //priority = priority - 1;
+                        if (priority >= 0)
+                        {
+                            MpckObject contentPrev = _contxMP.MpckObject.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority > priority);
+                            if (contentPrev != null)
+                            {
+                                int? priorityPrev = content.ObjPriority;
+                                content.ObjPriority = contentPrev.ObjPriority;
+                                _contxMP.MpckObject.Update(content);
+                                int updateCurrent = _contxMP.SaveChanges();
+                                if (updateCurrent > 0)
+                                {
+                                    contentPrev.ObjPriority = priorityPrev;
+                                    _contxMP.MpckObject.Update(contentPrev);
+                                    int updatePrev = _contxMP.SaveChanges();
+                                    if (updatePrev > 0)
+                                    {
+                                        status = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (action == "down")
+                {
+                    if (priority != null)
+                    {
+                        if (priority >= 0)
+                        {
+                            MpckObject contentPrev = _contxMP.MpckObject.OrderByDescending(x => x.ObjPriority).FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority < content.ObjPriority);
+                            if (contentPrev != null)
+                            {
+                                int? priorityPrev = contentPrev.ObjPriority;
+                                int? priorityContent = content.ObjPriority;
+                                content.ObjPriority = priorityPrev;
+                                _contxMP.MpckObject.Update(content);
+                                int updateCurrent = _contxMP.SaveChanges();
+                                if (updateCurrent > 0)
+                                {
+                                    contentPrev.ObjPriority = priorityContent;
+                                    _contxMP.MpckObject.Update(contentPrev);
+                                    int updatePrev = _contxMP.SaveChanges();
+                                    if (updatePrev > 0)
+                                    {
+                                        status = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (action == "change" && param.prev != null && param.next != null && param.prev != param.next)
+                {
+                    int prev = param.prev;
+                    int next = param.next;
+                    var contextPrev = _contxMP.MpckObject.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority == prev);
+                    var contextNext = _contxMP.MpckObject.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority == next);
+                    if (contextPrev != null && contextNext != null)
+                    {
+                        contextPrev.ObjPriority = next;
+                        contextNext.ObjPriority = prev;
+                        _contxMP.MpckObject.Update(contextPrev);
+                        _contxMP.MpckObject.Update(contextNext);
+                    }
+                    int updateChange = _contxMP.SaveChanges();
+                    if (updateChange > 0)
+                    {
+                        status = true;
+                    }
+                }
+                if (action == "back")
+                {
+                    List<MpckObject> listObj = await _contxMP.MpckObject.Where(x => x.LayoutCode == layoutCode && x.ObjCode != content.ObjCode).OrderBy(x => x.ObjPriority).ToListAsync();
+                    content.ObjPriority = 0;
+                    int newPriority = 1;
+                    foreach (MpckObject item in listObj)
+                    {
+                        item.ObjPriority = newPriority;
+                        newPriority++;
+                        _contxMP.MpckObject.Update(item);
+                    }
+                    int updateBack = await _contxMP.SaveChangesAsync();
+                    if (updateBack > 0)
+                    {
+                        status = true;
+                    }
+                }
+                if (action == "front")
+                {
+                    List<MpckObject> listObj = await _contxMP.MpckObject.Where(x => x.LayoutCode == layoutCode && x.ObjCode != content.ObjCode).OrderBy(x => x.ObjPriority).ToListAsync();
+                    int? lastPriority = listObj.LastOrDefault() != null ? listObj.LastOrDefault().ObjPriority : 100;
+                    content.ObjPriority = lastPriority;
+                    int? newPriority = lastPriority - 1;
+                    _contxMP.MpckObject.Update(content);
+                    listObj = listObj.OrderByDescending(x => x.ObjPriority).ToList();
+                    foreach (MpckObject item in listObj.OrderByDescending(x => x.ObjPriority))
+                    {
+                        item.ObjPriority = newPriority;
+                        newPriority--;
+                        _contxMP.MpckObject.Update(item);
+                    }
+                    int updateBack = await _contxMP.SaveChangesAsync();
+                    if (updateBack > 0)
+                    {
+                        status = true;
+                    }
+                }
+            }
+            return Ok(new
+            {
+                status = status
+            });
+        }
 
 
+        [HttpPost]
+        [Route("/mpck/editObject")]
+        public async Task<IActionResult> editObject([FromBody] MpckObject param)
+        {
+            bool status = false;
+            string objCode = param.ObjCode;
+            string position = param.ObjPosition;
+            MpckObject content = await _contxMP.MpckObject.FirstOrDefaultAsync(x => x.ObjCode == objCode);
+            if (content != null)
+            {
+                content.ObjPosition = position;
+                _contxMP.MpckObject.Update(content);
+                int update = await _contxMP.SaveChangesAsync();
+                if (update > 0)
+                {
+                    status = true;
+                }
+            }
+            return Ok(new
+            {
+                status = status
+            });
+        }
 
+        [HttpPost]
+        [Route("/mpck/getDataAndonboard")]
+        public async Task<IActionResult> getDataAndonBoard([FromBody] DataLog param)
+        {
+            string boardId = param.BoardId;
+            List<DataLog> res = new List<DataLog>();
+
+            if (boardId != null)
+            {
+                if (boardId.Contains(';'))
+                {
+                    string[] listBoard = boardId.Split(';');
+
+                    foreach (string board in listBoard)
+                    {
+                        DataLog item = new DataLog();
+                        BoardDatum boardData = await _contextPDB.BoardData.FirstOrDefaultAsync(x => x.BoardId == board);
+                        item = await _contextPDB.DataLogs.OrderByDescending(x => x.LogTime).FirstOrDefaultAsync(x => x.BoardId == board && x.Status == "Run");
+                        if (boardData != null)
+                        {
+                            item.Status = boardData.PdName;
+                        }
+                        res.Add(item);
+                    }
+                }
+            }
+
+            return Ok(res);
+
+        }
     }
 }
