@@ -559,6 +559,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             if (param.ObjCode.Trim() == "")
             {
                 oLayouts = _contxMP.MpckLayout.ToList();
+                List<BoardDatum> boardList = _contextPDB.BoardData.ToList();
             }
             else
             {
@@ -778,8 +779,6 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             //***** Object Info *******
             List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.ObjStatus == "ACTIVE" && o.ObjCode == param.ObjCode).ToList();
             object result = (dynamic)null;
-
-
 
             //***** Employee Info *******
             if (oObjects.Count > 0)
@@ -1795,6 +1794,14 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
             return Ok(res);
 
+        }
+
+        [HttpGet]
+        [Route("/mpck/getListAndonBoard")]
+        public IActionResult GetBoard(string boardId)
+        {
+            List<BoardDatum> listAndonBoard = _contextPDB.BoardData.ToList();
+            return Ok(listAndonBoard);
         }
     }
 }
