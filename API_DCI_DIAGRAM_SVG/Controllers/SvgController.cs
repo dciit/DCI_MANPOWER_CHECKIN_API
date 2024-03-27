@@ -716,6 +716,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
         }
 
+
         [HttpPost]
         [Route("/mpck/getObjectlistbyCode")]
         public IActionResult GetObjectListByCode([FromBody] MParamObjectCodeInfo param)
@@ -1803,5 +1804,55 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             List<BoardDatum> listAndonBoard = _contextPDB.BoardData.ToList();
             return Ok(listAndonBoard);
         }
+
+        [HttpGet]
+        [Route("/mpck/getsamqofempcode/{empcode}")]
+        public IActionResult GET_MQSA_OF_EMPCODE(string empcode)
+        {
+            List<TrLineProcess> oMQALLs = _contextDCI.TrLineProcess.Where(l => l.ProcType == "MQ").ToList();
+            List<SkcDictMstr> oSAALLs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
+            var oEmpMQs = _contextDCI.ViTrTrainessLog.Where(tr => tr.EmpCode == empcode && tr.Result == "P" && tr.Status == "post").ToList().GroupBy(g => g.MqNo);
+            var oEmpSAs = _contxMP.SkcLicenseTraining.Where(ct => ct.Empcode == empcode && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList().GroupBy(g => g.DictCode);
+
+            object arEmp_MQ = new { };
+
+            if (oEmpMQs.Count() > 0)
+            {
+                arEmp_MQ = from mq in oEmpMQs.OrderBy(b => b.Key)
+                           join mqall in oMQALLs
+                           on mq.Key equals mqall.ProcessCode
+                           select new
+                           {
+                               MQCode = mq.Key,
+                               MQName = mqall.ProcessName
+                           };
+            }
+
+            object arEmp_SA = new { };
+            if (oEmpSAs.Count() > 0)
+            {
+                arEmp_SA = from sa in oEmpSAs.OrderBy(b => b.Key)
+                           join saall in oSAALLs
+                           on sa.Key equals saall.Code
+                           select new
+                           {
+                               SACode = sa.Key,
+                               SAName = saall.DictDesc
+                           };
+            }
+            Employee oEmp = _contxHRM.Employee.FirstOrDefault(x => x.Code == empcode);
+            return Ok(new
+            {
+                empCode = empcode,
+                empMQ = arEmp_MQ,
+                empSA = arEmp_SA,
+                empImage = "http://dcidmc.dci.daikin.co.jp/PICTURE/" + empcode + ".jpg",
+                empName = oEmp != null ? $"{oEmp.Name}.{oEmp.Surn.Substring(0,1)}" : "",
+                empPosit = oEmp != null ? oEmp.Posit : "",
+                EmpJoin = Convert.ToDateTime(oEmp!.Join).ToString("dd/MMM/yyyy"),
+                EmpWorkDay = (DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays.ToString(),
+                EmpWorkYear = Math.Floor((DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays / 365).ToString(),
+            });
+        }
     }
-}
+}   
