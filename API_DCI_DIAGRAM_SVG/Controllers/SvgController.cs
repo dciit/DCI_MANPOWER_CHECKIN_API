@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using static API_DCI_DIAGRAM_SVG.Models.MParameter;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
+using System.Globalization;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace API_DCI_DIAGRAM_SVG.Controllers
 {
@@ -14,7 +17,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         private readonly HRMContext _contxHRM;
         private readonly DBPDB _contextPDB;
         ClsHelper oHelper = new ClsHelper();
-
+        private SqlConnectDB dbSCM = new SqlConnectDB("dbSCM");
         public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM, DBPDB contextPDB)
         {
             _contextDCI = contextDCI;
@@ -1927,7 +1930,77 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/aps/get/test")]
         public IActionResult ApsGetTest()
         {
-            return Ok("ApsGetTest");
+
+       //     DateTime dtNow = DateTime.Now;
+       //     DateTime plan_startDate = DateTime.ParseExact("18/06/2024", "dd/MM/yyyy", CultureInfo.InvariantCulture);
+       //     DateTime plan_endDate = DateTime.ParseExact("18/06/2024", "dd/MM/yyyy", CultureInfo.InvariantCulture);
+          
+
+
+       //     List<ApsSchema> rApsSchema = new List<ApsSchema>
+       //     {
+       //           new ApsSchema() { factory = "1", line = "ASSEMBLY LINE1 (1YC) Line 1", wcno = "901" },
+       //         new ApsSchema() { factory = "1", line = "ASSEMBLY LINE1 (1YC) Line 1", wcno = "901" },
+       //         new ApsSchema() { factory = "1", line = "FINAL-ASSEMBLY LINE1 (1YC) Line 1", wcno = "901" }
+       //     };
+       //     List<List<string>> rResult = new List<List<string>>();
+       //     // SET START TIME
+       //     List<string> rStartTime = new List<string>();
+       //     foreach (ApsSchema oScheman in rApsSchema)
+       //     {
+       //         rStartTime.Add("08:20");
+       //     }
+       //     rResult.Add(rStartTime);
+
+       //     // SET PLAN TODAY
+       //     string dd = dtNow.ToString("dd");
+       //     List<string> rPlan = new List<string>();
+       //     foreach (ApsSchema oScheman in rApsSchema)
+       //     {
+       //         string DailyQty = "";
+
+       //         Random rnd = new Random();
+       //         string pid = rnd.Next().ToString();
+
+       //         //CREATE TEMP DAILY DATA
+       //         SqlCommand sqlStore = new SqlCommand();
+       //         sqlStore.CommandText = "sp_APS_WK_DailyPlan";
+       //         sqlStore.CommandType = CommandType.StoredProcedure;
+       //         sqlStore.Parameters.Add(new SqlParameter("@pPID", pid));
+       //         sqlStore.Parameters.Add(new SqlParameter("@pWCNO", oScheman.wcno));
+       //         sqlStore.Parameters.Add(new SqlParameter("@pLINENAME", oScheman.line));
+       //         sqlStore.CommandTimeout = 180;
+       //         dbSCM.ExecuteCommand(sqlStore);
+
+
+
+       //         SqlCommand sqlSelectDaily = new SqlCommand();
+       //         sqlSelectDaily.CommandText = @"SELECT SUM(CAST(D18 As int)) as PlanQty
+       //                     FROM vi_WK_APS_PlanDailyReport 
+       //                     WHERE WCNO = @WCNO AND LineName = @LINE
+							//AND YM = @YM
+							// AND PID = @PID";
+       //         sqlSelectDaily.Parameters.Add(new SqlParameter("@WCNO", oScheman.wcno));
+       //         sqlSelectDaily.Parameters.Add(new SqlParameter("@LINE", oScheman.line));
+       //         sqlSelectDaily.Parameters.Add(new SqlParameter("@YM", dtNow.ToString("yyyyMM")));
+       //         sqlSelectDaily.Parameters.Add(new SqlParameter("@PID", pid));
+       //         DataTable dtDaily = dbSCM.Query(sqlSelectDaily);
+       //         if (dtDaily.Rows.Count > 0)
+       //         {
+       //             DailyQty = dtDaily.Rows[0]["PlanQty"].ToString();
+       //         }
+       //         // DEL TEMP 
+       //         SqlCommand sqlDelTempApsReport = new SqlCommand();
+       //         sqlDelTempApsReport.CommandText = @"DELETE  FROM vi_WK_APS_PlanDailyReport 
+       //                     WHERE  PID = @PID";
+       //         sqlDelTempApsReport.Parameters.Add(new SqlParameter("@PID", pid));
+       //         dbSCM.Query(sqlDelTempApsReport);
+       //         rPlan.Add(DailyQty);
+       //     }
+       //     rResult.Add(rPlan);
+
+           
+            return Ok();
         }
     }
 }
