@@ -59,6 +59,18 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [Column("Obj_BorderColor")]
         [StringLength(10)]
         public string? ObjBorderColor { get; set; }
+
+        [Column("Obj_BorderWidth")]
+        public int? ObjBorderWidth { get; set; }
+
+        [Column("Obj_FontSize")]
+        public int ObjFontSize { get; set; }
+
+        [Column("Obj_FontColor")]
+        [StringLength(10)]
+        public string ObjFontColor { get; set; }
+
+
         [Column("Obj_Priority")]
         public int? ObjPriority { get; set; }
 

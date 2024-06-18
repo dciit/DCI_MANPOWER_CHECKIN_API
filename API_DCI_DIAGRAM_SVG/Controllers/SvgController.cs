@@ -563,7 +563,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             }
             else
             {
-                oLayouts = _contxMP.MpckLayout.Where(l => l.LayoutCode == param.ObjCode).ToList();
+                oLayouts = _contxMP.MpckLayout.Where(l => l.LayoutCode == param.ObjCode && l.LayoutStatus == "ACTIVE").ToList();
             }
             return Ok(oLayouts);
         }
@@ -708,6 +708,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                              obj.ObjHeight,
                              obj.ObjBackgroundColor,
                              obj.ObjBorderColor,
+                             obj.ObjBorderWidth,
+                             obj.ObjFontSize,
+                             obj.ObjFontColor,
                              obj.ObjPriority,
                              sync = false,
                              obj.ObjPosition
@@ -802,7 +805,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 {
                     if (oObj.EmpCode != "")
                     {
-                        arLogObj = _contxMP.ViMpckCheckInOutLog.Where(l => l.EmpCode == oObj.EmpCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
+                        arLogObj = _contxMP.ViMpckCheckInOutLog.Where(l => l.EmpCode == oObj.EmpCode).OrderByDescending(o => o.CkdateTime).ToList().Take(10);
                     }
                 }
                 object arObj_MQ = new { };
@@ -876,6 +879,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                         result = from obj in oObjects
                                  select new
                                  {
+                                     obj.ObjMasterId,
                                      obj.ObjCode,
                                      obj.ObjTitle,
                                      obj.ObjSubtitle,
@@ -904,8 +908,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                      obj.ObjHeight,
                                      obj.ObjBackgroundColor,
                                      obj.ObjBorderColor,
+                                     obj.ObjBorderWidth,
+                                     obj.ObjFontSize,
+                                     obj.ObjFontColor,
                                      obj.ObjType,
-                                     obj.ObjPosition
+                                     obj.ObjPosition,
+                                     obj.ObjPriority
                                  };
                     } // end check have employee
                 }
@@ -914,6 +922,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     result = from obj in oObjects
                              select new
                              {
+                                 obj.ObjMasterId,
                                  obj.ObjCode,
                                  obj.ObjTitle,
                                  obj.ObjSubtitle,
@@ -940,8 +949,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                  obj.ObjWidth,
                                  obj.ObjHeight,
                                  obj.ObjBackgroundColor,
+                                 obj.ObjBorderWidth,
+                                 obj.ObjFontSize,
+                                 obj.ObjFontColor,
                                  obj.ObjBorderColor,
-                                 obj.ObjType
+                                 obj.ObjType,
+                                 obj.ObjPriority
                              };
                 }
             }
@@ -998,12 +1011,28 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     mObj.ObjWidth = param.ObjWidth;
                     mObj.ObjHeight = param.ObjHeight;
                     mObj.ObjBackgroundColor = "";
-                    mObj.ObjBorderColor = "";
-                    mObj.ObjPriority = priority;
+                    mObj.ObjBorderWidth = 1;
+                    mObj.ObjFontSize = 14;
+                    mObj.ObjFontColor = "#0000ff";
+                    mObj.ObjBorderColor = "#0000ff";
+                    mObj.ObjPriority = 0;
                     mObj.ObjPosition = "OP";
+
                     _contxMP.MpckObject.Attach(mObj);
                     _contxMP.Entry(mObj).State = EntityState.Added;
                     int res = _contxMP.SaveChanges();
+                    if (res == 1)
+                    {
+                        List<MpckObject> rObjByLayout = _contxMP.MpckObject.Where(x => x.LayoutCode == param.LayoutCode && x.ObjCode != nbr[0].RunNbr).OrderBy(x => x.ObjPriority).ToList();
+                        int new_priority = 1;
+                        foreach (MpckObject oObj in rObjByLayout)
+                        {
+                            oObj.ObjPriority = new_priority;
+                            _contxMP.MpckObject.Update(oObj);
+                            new_priority = new_priority + 1;
+                        }
+                        _contxMP.SaveChanges();
+                    }
                     return Ok(new { status = res, msg = nbr[0].RunNbr });
                 }
                 else
@@ -1122,17 +1151,32 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult GetMasterList([FromBody] MParamObjectCodeInfo param)
         {
             List<MpckObjectMaster> oMstObjs = new List<MpckObjectMaster>();
-            if (param.ObjCode.Trim() == "")
+            try
             {
-                oMstObjs = _contxMP.MpckObjectMaster.ToList();
-            }
-            else
-            {
-                oMstObjs = _contxMP.MpckObjectMaster.Where(l => l.ObjMasterId == param.ObjCode).ToList();
-            }
 
+                string objCode = param.ObjCode;
+                string layoutCode = param.layoutCode;
+                if (objCode != "")
+                {
+                    oMstObjs = _contxMP.MpckObjectMaster.Where(l => l.ObjMasterId == objCode).ToList();
+
+                }
+                else
+                {
+                    oMstObjs = _contxMP.MpckObjectMaster.Where(l => l.MstStatus == "ACTIVE").ToList();
+                }
+                if (layoutCode != null && layoutCode != "" && layoutCode != "ALL")
+                {
+                    oMstObjs = oMstObjs.Where(x => x.LayoutCode == layoutCode).ToList();
+                }
+
+                //}
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
             return Ok(oMstObjs);
-
         }
 
         [HttpPost]
@@ -1163,6 +1207,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 oMst.MstName = param.MstName;
                 oMst.ObjSvg = param.ObjSvg;
                 oMst.MstOrder = param.MstOrder;
+                oMst.LayoutCode = param.LayoutCode;
                 oMst.MstStatus = "ACTIVE";
 
                 _contxMP.MpckObjectMaster.Attach(oMst);
@@ -1583,6 +1628,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 context.ObjType = param.ObjType;
                 context.ObjWidth = param.ObjWidth;
                 context.ObjHeight = param.ObjHeight;
+                context.ObjBorderWidth = param.ObjBorderWidth;
+                context.ObjFontSize = param.ObjFontSize;
+                context.ObjFontColor = param.ObjFontColor;
                 _contxMP.MpckObject.Update(context);
                 int update = await _contxMP.SaveChangesAsync();
                 if (update > 0)
@@ -1781,14 +1829,17 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
                     foreach (string board in listBoard)
                     {
-                        DataLog item = new DataLog();
-                        BoardDatum boardData = await _contextPDB.BoardData.FirstOrDefaultAsync(x => x.BoardId == board);
-                        item = await _contextPDB.DataLogs.OrderByDescending(x => x.LogTime).FirstOrDefaultAsync(x => x.BoardId == board && x.Status == "Run");
-                        if (boardData != null)
+                        if (board != "")
                         {
-                            item.Status = boardData.PdName;
+                            DataLog item = new DataLog();
+                            BoardDatum boardData = await _contextPDB.BoardData.FirstOrDefaultAsync(x => x.BoardId == board);
+                            item = await _contextPDB.DataLogs.OrderByDescending(x => x.LogTime).FirstOrDefaultAsync(x => x.BoardId == board && x.Status == "Run");
+                            if (boardData != null)
+                            {
+                                item.Status = boardData.PdName;
+                            }
+                            res.Add(item);
                         }
-                        res.Add(item);
                     }
                 }
             }
@@ -1847,12 +1898,21 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 empMQ = arEmp_MQ,
                 empSA = arEmp_SA,
                 empImage = "http://dcidmc.dci.daikin.co.jp/PICTURE/" + empcode + ".jpg",
-                empName = oEmp != null ? $"{oEmp.Name}.{oEmp.Surn.Substring(0,1)}" : "",
+                empName = oEmp != null ? $"{oEmp.Name}.{oEmp.Surn.Substring(0, 1)}" : "",
                 empPosit = oEmp != null ? oEmp.Posit : "",
                 EmpJoin = Convert.ToDateTime(oEmp!.Join).ToString("dd/MMM/yyyy"),
                 EmpWorkDay = (DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays.ToString(),
                 EmpWorkYear = Math.Floor((DateTime.Now - Convert.ToDateTime(oEmp!.Join)).TotalDays / 365).ToString(),
             });
         }
+
+
+        [HttpGet]
+        [Route("/mpck/getLayoutDetail/{layoutCode}")]
+        public IActionResult GetLayoutDetail(string layoutCode)
+        {
+            MpckLayout oLayout = _contxMP.MpckLayout.FirstOrDefault(x => x.LayoutCode == layoutCode);
+            return Ok(oLayout);
+        }
     }
-}   
+}

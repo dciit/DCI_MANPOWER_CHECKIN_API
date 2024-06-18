@@ -16,6 +16,11 @@ namespace API_DCI_DIAGRAM_SVG.Models
         [Column("Mst_Name")]
         [StringLength(50)]
         public string? MstName { get; set; }
+
+        [Column("LayoutCode")]
+        [StringLength(50)]
+        public string LayoutCode { get; set; } = null!;
+
         [Column("OBJ_SVG", TypeName = "text")]
         public string? ObjSvg { get; set; }
         [Column("Mst_Status")]

@@ -35,6 +35,7 @@ namespace API_DCI_DIAGRAM_SVG.Models
         public class MParamObjectCodeInfo
         {
             public string ObjCode { get; set; }
+            public string layoutCode { get; set; }
         }
 
         public class MParamObjectStatusInfo
