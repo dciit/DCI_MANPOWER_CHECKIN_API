@@ -1914,5 +1914,20 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             MpckLayout oLayout = _contxMP.MpckLayout.FirstOrDefault(x => x.LayoutCode == layoutCode);
             return Ok(oLayout);
         }
+
+        [HttpGet]
+        [Route("/mpck/get/test")]
+        public IActionResult MpckGetTest()
+        {
+            return Ok("MpckGetTest");
+        }
+
+
+        [HttpGet]
+        [Route("/aps/get/test")]
+        public IActionResult ApsGetTest()
+        {
+            return Ok("ApsGetTest");
+        }
     }
 }
