@@ -107,6 +107,10 @@ namespace API_DCI_DIAGRAM_SVG.Models
         {
             public string ObjCode { get; set; }
             public string ObjCode2 { get; set; }
+            public string ObjCode3 { get; set; }
+            public string ObjCode4 { get; set; }
+            public string ObjCode5 { get; set; }
+            public string ObjCode6 { get; set; }
         }
 
     }
