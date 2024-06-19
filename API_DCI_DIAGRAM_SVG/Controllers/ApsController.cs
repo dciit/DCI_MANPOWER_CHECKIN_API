@@ -1,12 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using API_DCI_DIAGRAM_SVG.Contexts;
+using Microsoft.AspNetCore.Mvc;
 
 namespace API_DCI_DIAGRAM_SVG.Controllers
 {
     public class ApsController : Controller
     {
-        public IActionResult Index()
+        private readonly DBSCM efSCM = new DBSCM();
+        [HttpPost]
+        [Route("/aps/data")]
+        public IActionResult ApsData()
         {
-            return View();
+            return Ok();
         }
     }
 }
