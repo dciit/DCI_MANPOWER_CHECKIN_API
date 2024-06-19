@@ -32,7 +32,11 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             DateTime dtNow = DateTime.Now;
             List<ApsSchema> rApsSchema = new List<ApsSchema>
                  {
+<<<<<<< HEAD
+                     new ApsSchema() { factory = "1", line = "ASSEMBLY LINE1 (1YC) Line 1", wcno = "904" },
+=======
                      new ApsSchema() { factory = "1", line = "ASSEMBLY LINE4 (SCR)", wcno = "904" },
+>>>>>>> main
                      new ApsSchema() { factory = "1", line = "FINAL-ASSEMBLY LINE1 (1YC) Line 1", wcno = "904" }
                  };
             List<List<string>> rResult = new List<List<string>>();
@@ -40,9 +44,15 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             List<string> rStartTime = new List<string>();
             foreach (ApsSchema oScheman in rApsSchema)
             {
+<<<<<<< HEAD
+                rStartTime.Add("08:20");
+            }
+
+=======
                 rStartTime.Add("08:20"); 
 
             }
+>>>>>>> main
             rResult.Add(rStartTime);
 
             // SET PLAN TODAY

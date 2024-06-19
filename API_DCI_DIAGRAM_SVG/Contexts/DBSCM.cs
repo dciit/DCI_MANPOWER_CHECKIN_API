@@ -17,6 +17,8 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
         {
         }
 
+        public virtual DbSet<ViApsPartMaster> ViApsPartMasters { get; set; } = null!;
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -29,6 +31,39 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.UseCollation("Thai_CI_AS");
+
+            modelBuilder.Entity<ViApsPartMaster>(entity =>
+            {
+                entity.HasNoKey();
+
+                entity.ToView("vi_APS_PartMaster");
+
+                entity.Property(e => e.Cm)
+                    .HasMaxLength(1)
+                    .HasColumnName("CM")
+                    .IsFixedLength();
+
+                entity.Property(e => e.Model)
+                    .HasMaxLength(4)
+                    .IsUnicode(false)
+                    .HasColumnName("MODEL");
+
+                entity.Property(e => e.PartCode)
+                    .HasMaxLength(50)
+                    .HasColumnName("PART_CODE");
+
+                entity.Property(e => e.PartNameCode)
+                    .HasMaxLength(50)
+                    .HasColumnName("PART_NAME_CODE");
+
+                entity.Property(e => e.Partno)
+                    .HasMaxLength(50)
+                    .HasColumnName("PARTNO");
+
+                entity.Property(e => e.Wcno)
+                    .HasMaxLength(3)
+                    .HasColumnName("WCNO");
+            });
 
             OnModelCreatingPartial(modelBuilder);
         }
