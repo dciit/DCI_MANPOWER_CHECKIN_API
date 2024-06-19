@@ -42,6 +42,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 rStartTime.Add("08:20");
             }
+
             rResult.Add(rStartTime);
 
             // SET PLAN TODAY
