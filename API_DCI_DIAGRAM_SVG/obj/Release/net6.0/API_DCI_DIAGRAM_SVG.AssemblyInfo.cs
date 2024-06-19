@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("API_DCI_DIAGRAM_SVG")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4a82d96c818c542469c9798ae7efc5ffd6a357b1")]
 [assembly: System.Reflection.AssemblyProductAttribute("API_DCI_DIAGRAM_SVG")]
 [assembly: System.Reflection.AssemblyTitleAttribute("API_DCI_DIAGRAM_SVG")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

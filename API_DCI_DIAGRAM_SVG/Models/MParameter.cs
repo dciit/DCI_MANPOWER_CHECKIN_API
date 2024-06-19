@@ -102,5 +102,12 @@ namespace API_DCI_DIAGRAM_SVG.Models
             public string ObjCode { get; set; }
         }
 
+
+        public class MOutputManagementObject2
+        {
+            public string ObjCode { get; set; }
+            public string ObjCode2 { get; set; }
+        }
+
     }
 }
