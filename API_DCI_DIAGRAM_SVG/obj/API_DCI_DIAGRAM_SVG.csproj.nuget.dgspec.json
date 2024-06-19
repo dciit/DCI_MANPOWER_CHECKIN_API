@@ -1,24 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\git\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj": {}
+    "D:\\00.Project\\2024\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj": {}
   },
   "projects": {
-    "D:\\git\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj": {
+    "D:\\00.Project\\2024\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\git\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj",
+        "projectUniqueName": "D:\\00.Project\\2024\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj",
         "projectName": "API_DCI_DIAGRAM_SVG",
-        "projectPath": "D:\\git\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj",
-        "packagesPath": "C:\\Users\\peerapong.k.ITNB17_41256\\.nuget\\packages\\",
-        "outputPath": "D:\\git\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\obj\\",
+        "projectPath": "D:\\00.Project\\2024\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\API_DCI_DIAGRAM_SVG.csproj",
+        "packagesPath": "C:\\Users\\aukit.k\\.nuget\\packages\\",
+        "outputPath": "D:\\00.Project\\2024\\DCI_MANPOWER_CHECKIN_API\\API_DCI_DIAGRAM_SVG\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\peerapong.k.ITNB17_41256\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Users\\aukit.k\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -39,6 +35,11 @@
           "warnAsError": [
             "NU1605"
           ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
@@ -47,23 +48,23 @@
           "dependencies": {
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[7.0.20, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[7.0.20, )"
             },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[7.0.20, )"
             },
             "Microsoft.EntityFrameworkCore.Tools": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[6.0.0, )"
+              "version": "[7.0.20, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
@@ -81,24 +82,6 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[6.0.25, 6.0.25]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Host.win-x64",
-              "version": "[6.0.25, 6.0.25]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[6.0.25, 6.0.25]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[6.0.25, 6.0.25]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -107,7 +90,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.404\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.300\\RuntimeIdentifierGraph.json"
         }
       }
     }
