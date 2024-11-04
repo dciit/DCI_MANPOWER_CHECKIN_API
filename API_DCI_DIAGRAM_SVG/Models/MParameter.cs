@@ -36,6 +36,7 @@ namespace API_DCI_DIAGRAM_SVG.Models
         {
             public string ObjCode { get; set; }
             public string layoutCode { get; set; }
+            public string? factory { get; set; } = "";
         }
 
         public class MParamObjectStatusInfo

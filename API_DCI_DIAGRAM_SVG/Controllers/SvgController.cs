@@ -3,41 +3,33 @@ using API_DCI_DIAGRAM_SVG.Models;
 using Microsoft.AspNetCore.Mvc;
 using static API_DCI_DIAGRAM_SVG.Models.MParameter;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
-using System.Globalization;
-using Microsoft.Data.SqlClient;
 using System.Data;
+using DCI_MANPOWER_API.Params;
+using API_DCI_DIAGRAM_SVG.Props;
 
 namespace API_DCI_DIAGRAM_SVG.Controllers
 {
     public class SvgController : Controller
     {
+        private readonly DBSCM _contextSCM;
         private readonly DBDCI _contextDCI;
-        private readonly ManpowerContext _contxMP;
         private readonly HRMContext _contxHRM;
         private readonly DBPDB _contextPDB;
         ClsHelper oHelper = new ClsHelper();
-        private SqlConnectDB dbSCM = new SqlConnectDB("dbSCM");
-        public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM, DBPDB contextPDB)
+
+        public SvgController(DBSCM efSCM, DBDCI contextDCI, HRMContext contxHRM, DBPDB contextPDB)
         {
+            _contextSCM = efSCM;
             _contextDCI = contextDCI;
-            _contxMP = contxMP;
             _contxHRM = contxHRM;
             _contextPDB = contextPDB;
         }
-
-        //public SvgController(DBDCI contextDCI, ManpowerContext contxMP, HRMContext contxHRM)
-        //{
-        //    _contextDCI = contextDCI;
-        //    _contxMP = contxMP;
-        //    _contxHRM = contxHRM;
-        //}
 
         [HttpGet]
         [Route("/master/equipment")]
         public IActionResult masterEquipment()
         {
-            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjW == 0 && x.ObjH == 0).OrderByDescending(x => x.ObjId).ToList();
+            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjW == 0 && x.ObjH == 0).OrderByDescending(x => x.ObjId).ToList();
             return Ok(content);
         }
 
@@ -45,13 +37,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/master/equipment/id/{id}")]
         public IActionResult masterEquipmentById(string id = "")
         {
-
-
             DateTime dtNow = DateTime.Now;
-            //DateTime.Now.ToString("yyyy-MM-dd") + " 08:00:00     ====>  "
             DateTime dtStart = DateTime.Parse(DateTime.Now.ToString() + " 08:00:00");
-
-            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjId == id).FirstOrDefault();
+            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjId == id).FirstOrDefault();
             return Ok(content);
         }
 
@@ -61,16 +49,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult masterEquipmentAdd([FromBody] LnsEquipmentMaster param)
         {
             string msg = "";
-            //string pattern = "(?<=\\<[^<>]*)\"(?=[^><]*\\>)";
-            //string output = Regex.Replace(param.ObjSvg, pattern, "'");
-            //output = output.Replace(@"""", @"\""");
-            //param.ObjSvg = output;
-            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjId == param.ObjId).FirstOrDefault();
+            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjId == param.ObjId).FirstOrDefault();
             if (content == null)
             {
                 param.ObjW = 0;
                 param.ObjH = 0;
-                _contextDCI.LnsEquipmentMaster.Add(param);
+                _contextDCI.LnsEquipmentMasters.Add(param);
             }
             else
             {
@@ -86,17 +70,13 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult UpdateMaster([FromBody] LnsEquipmentMaster param)
         {
             string msg = "";
-            //string pattern = "(?<=\\<[^<>]*)\"(?=[^><]*\\>)";
-            //string output = Regex.Replace(param.ObjSvg, pattern, "'");
-            //output = output.Replace(@"""", @"\""");
-            //param.ObjSvg = output;
-            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjId == param.ObjId).FirstOrDefault();
+            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjId == param.ObjId).FirstOrDefault();
             if (content != null)
             {
                 content.ObjW = 0;
                 content.ObjH = 0;
                 content.ObjSvg = param.ObjSvg;
-                _contextDCI.LnsEquipmentMaster.Update(content);
+                _contextDCI.LnsEquipmentMasters.Update(content);
             }
             int update = _contextDCI.SaveChanges();
             return Ok(new { status = update, msg = msg });
@@ -108,19 +88,19 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         {
             int res = 0;
             string status = param.EqpStatus;
-            var equipment = _contextDCI.LnsEquipment.FirstOrDefault(x => x.EqpId == param.EqpId);
+            var equipment = _contextDCI.LnsEquipments.FirstOrDefault(x => x.EqpId == param.EqpId);
             if (equipment != null)
             {
                 double condDays = equipment.ObjMstNextYear == 1 ? 30 : 10;  // -30
                 double diffDays = Math.Ceiling(((DateTime)equipment.EqpNextCheckDt - DateTime.Now).TotalDays); // 14
                 if (diffDays >= (condDays * -1) && diffDays <= condDays)
                 {
-                    param.Nbr = _contextDCI.LnsEquipmentCheckLog.Count().ToString();
+                    param.Nbr = _contextDCI.LnsEquipmentCheckLogs.Count().ToString();
                     param.EqpCheckDt = DateTime.Now;
                     param.EqpNextCheckDt = equipment.EqpNextCheckDt;
                     param.EqpStatus = status == "true" ? "normal" : "abnormal";
                     param.EqpCheckBy = param.EqpCheckBy;
-                    _contextDCI.LnsEquipmentCheckLog.Add(param);
+                    _contextDCI.LnsEquipmentCheckLogs.Add(param);
                     int updateLog = _contextDCI.SaveChanges();
                     if (updateLog > 0)
                     {
@@ -174,19 +154,18 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/get")]
         public IActionResult GetEquipments()
         {
-            var content = _contextDCI.LnsEquipment.ToList();
+            var content = _contextDCI.LnsEquipments.ToList();
             return Ok(content);
         }
-
 
         [HttpGet]
         [Route("/equipment/get/id/{eqpId}")]
         public IActionResult GetEquipments(string eqpId)
         {
-            var content = (from eqp in _contextDCI.LnsEquipment.Where(x => x.EqpId == eqpId).ToList()
-                           join emp in _contextDCI.Employee
+            var content = (from eqp in _contextDCI.LnsEquipments.Where(x => x.EqpId == eqpId).ToList()
+                           join emp in _contextDCI.Employees
                            on eqp.EqpLastCheckBy equals emp.Code
-                           join master in _contextDCI.LnsEquipmentMaster
+                           join master in _contextDCI.LnsEquipmentMasters
                            on eqp.ObjId equals master.ObjId
                            select new
                            {
@@ -203,10 +182,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                eqp.Factory,
                                shortname = emp.Name + "." + emp.Surn.Substring(0, 1),
                                master.ObjSvg,
-                               //objSvg = "<svg height='30' width='100'><text x='0' y='15' fill='black'>{name}</text></svg>"
                            }).FirstOrDefault();
-
-
             return Ok(content);
         }
 
@@ -214,8 +190,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment")]
         public IActionResult Equipment([FromBody] LnsEquipment param)
         {
-            var context = (from eqp in _contextDCI.LnsEquipment.DefaultIfEmpty()
-                           join obj in _contextDCI.LnsEquipmentMaster
+            var context = (from eqp in _contextDCI.LnsEquipments.DefaultIfEmpty()
+                           join obj in _contextDCI.LnsEquipmentMasters
                            on eqp.ObjId equals obj.ObjId
                            where eqp.EqpStatus == "pending" || eqp.EqpStatus == "completed"
                            select new
@@ -234,7 +210,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                                eqp.EqpScale,
                                eqp.EqpNextCheckDt,
                                eqp.EqpRotate,
-                               Status = (_contextDCI.LnsEquipmentCheckLog.Where(x => x.EqpId == eqp.EqpId).OrderByDescending(x => x.EqpCheckDt).FirstOrDefault().EqpStatus)
+                               Status = (_contextDCI.LnsEquipmentCheckLogs.Where(x => x.EqpId == eqp.EqpId).OrderByDescending(x => x.EqpCheckDt).FirstOrDefault().EqpStatus)
                            }).ToList();
             if (param.LayoutCode != "" && param.LayoutCode != "null" && param.LayoutCode != null)
             {
@@ -249,7 +225,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult EquipmentAdd([FromBody] LnsEquipment param)
         {
             string EqpId = "";
-            var ObjIdMaster = _contextDCI.LnsEquipment.Where(x => x.ObjId.StartsWith(param.ObjId)).ToList().LastOrDefault();
+            var ObjIdMaster = _contextDCI.LnsEquipments.Where(x => x.ObjId.StartsWith(param.ObjId)).ToList().LastOrDefault();
             if (ObjIdMaster != null)
             {
                 int Running = int.Parse(ObjIdMaster.EqpId.Substring(ObjIdMaster.EqpId.Length - 3));
@@ -270,7 +246,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             param.EqpX = param.EqpX - (param.EqpW / 2);
             param.EqpY = param.EqpY - (param.EqpH / 2);
             param.EqpRotate = param.EqpRotate;
-            _contextDCI.LnsEquipment.Add(param);
+            _contextDCI.LnsEquipments.Add(param);
             int res = _contextDCI.SaveChanges();
             return Ok(new { status = res });
             //LnsPoint newPoint = new LnsPoint();
@@ -286,86 +262,57 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             //return Ok(new { status = ins });
         }
 
-        [HttpPost]
-        [Route("/getpoint")]
-        public IActionResult GetPoint()
-        {
-            //var context = (from point in _contextDCI.LnsEquipments.DefaultIfEmpty()
-            //               join obj in _contextDCI.LnsEquipmentMasters
-            //               on point.ObjId equals obj.ObjId
-            //               select new
-            //               {
-            //                   type = obj.ObjType,
-            //                   Id = point.ObjId,
-            //                   Name = point.PosName,
-            //                   X = point.PosX,
-            //                   transform = "translate(" + point.PosX + "," + point.PosY + " )",
-            //                   Y = point.PosY,
-            //                   H = point.PosH,
-            //                   R = obj.ObjR,
-            //                   Axis = obj.ObjAxis,
-            //                   Svg = obj.ObjSvg
-            //               }).ToList();
-            //return Ok(context);
-            return Ok();
-        }
-        [HttpGet]
-        [Route("/removepoint/{posId}")]
-        public IActionResult RemovePoint(int posId)
-        {
-            //var posItem = _contextDCI.LnsPoints.SingleOrDefault(x => x.PosId == posId);
-            //if (posItem != null)
-            //{
-            //    _contextDCI.LnsPoints.Remove(posItem);
+        //[HttpPost]
+        //[Route("/getpoint")]
+        //public IActionResult GetPoint()
+        //{
+        //var context = (from point in _contextDCI.LnsEquipments.DefaultIfEmpty()
+        //               join obj in _contextDCI.LnsEquipmentMasterss
+        //               on point.ObjId equals obj.ObjId
+        //               select new
+        //               {
+        //                   type = obj.ObjType,
+        //                   Id = point.ObjId,
+        //                   Name = point.PosName,
+        //                   X = point.PosX,
+        //                   transform = "translate(" + point.PosX + "," + point.PosY + " )",
+        //                   Y = point.PosY,
+        //                   H = point.PosH,
+        //                   R = obj.ObjR,
+        //                   Axis = obj.ObjAxis,
+        //                   Svg = obj.ObjSvg
+        //               }).ToList();
+        //return Ok(context);
+        //    return Ok();
+        //}
+        //[HttpGet]
+        //[Route("/removepoint/{posId}")]
+        //public IActionResult RemovePoint(int posId)
+        //{
+        //    //var posItem = _contextDCI.LnsPoints.SingleOrDefault(x => x.PosId == posId);
+        //    //if (posItem != null)
+        //    //{
+        //    //    _contextDCI.LnsPoints.Remove(posItem);
 
-            //}
-            //var result = _contextDCI.SaveChanges();
-            //return Ok(result);
-            return Ok();
-        }
+        //    //}
+        //    //var result = _contextDCI.SaveChanges();
+        //    //return Ok(result);
+        //    return Ok();
+        //}
 
-        [HttpGet]
-        [Route("/removeobject/{objId}")]
-        public IActionResult RemoveObject(int objId)
-        {
-            //var objItem = _contextDCI.LnsObjectMasters.SingleOrDefault(x => x.ObjId == objId);
-            //if (objItem != null)
-            //{
-            //    _contextDCI.LnsObjectMasters.Remove(objItem);
-
-            //}
-            //var result = _contextDCI.SaveChanges();
-            //return Ok(result);
-            return Ok();
-        }
-        [HttpGet]
-        [Route("/getobject")]
-        public IActionResult GetObjectAll()
-        {
-            //try
-            //{
-            //    return Ok(_contextDCI.LnsObjectMasters.ToList());
-            //}
-            //catch
-            //{
-            //    return Ok();
-            //}
-            return Ok();
-        }
-
-        [HttpGet]
-        [Route("/clearpoint")]
-        public IActionResult ClearPoint()
-        {
-            //var context = _contextDCI.LnsPoints.ToList();
-            //if (context != null)
-            //{
-            //    _contextDCI.LnsPoints.RemoveRange(context);
-            //    _contextDCI.SaveChanges();
-            //}
-            //return Ok();
-            return Ok();
-        }
+        //[HttpGet]
+        //[Route("/clearpoint")]
+        //public IActionResult ClearPoint()
+        //{
+        //    //var context = _contextDCI.LnsPoints.ToList();
+        //    //if (context != null)
+        //    //{
+        //    //    _contextDCI.LnsPoints.RemoveRange(context);
+        //    //    _contextDCI.SaveChanges();
+        //    //}
+        //    //return Ok();
+        //    return Ok();
+        //}
 
         [HttpPost]
         [Route("/insertpoint/")]
@@ -386,10 +333,10 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/master/equipment/delete/{id}")]
         public IActionResult DeleteMasterEquipment(string id)
         {
-            var content = _contextDCI.LnsEquipmentMaster.Where(x => x.ObjId == id).FirstOrDefault();
+            var content = _contextDCI.LnsEquipmentMasters.Where(x => x.ObjId == id).FirstOrDefault();
             if (content != null)
             {
-                _contextDCI.LnsEquipmentMaster.Remove(content);
+                _contextDCI.LnsEquipmentMasters.Remove(content);
             }
             int res = _contextDCI.SaveChanges();
             return Ok(new { status = res });
@@ -399,10 +346,10 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/delete")]
         public IActionResult DeleteEquipment([FromBody] LnsEquipment param)
         {
-            var content = _contextDCI.LnsEquipment.FirstOrDefault(x => x.EqpId == param.EqpId);
+            var content = _contextDCI.LnsEquipments.FirstOrDefault(x => x.EqpId == param.EqpId);
             if (content != null)
             {
-                _contextDCI.LnsEquipment.Remove(content);
+                _contextDCI.LnsEquipments.Remove(content);
             }
             int res = _contextDCI.SaveChanges();
             return Ok(new { status = res });
@@ -413,7 +360,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout/add")]
         public IActionResult AddLayout([FromBody] LnsLayout param)
         {
-            _contextDCI.LnsLayout.Add(param);
+            _contextDCI.LnsLayouts.Add(param);
             int res = _contextDCI.SaveChanges();
             return Ok(new { status = res });
         }
@@ -422,7 +369,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout")]
         public IActionResult GetLayouts()
         {
-            var content = _contextDCI.LnsLayout.OrderBy(x => x.LayoutCode).ToList();
+            var content = _contextDCI.LnsLayouts.OrderBy(x => x.LayoutCode).ToList();
             return Ok(content);
         }
 
@@ -430,7 +377,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout/{layoutCode}")]
         public IActionResult GetLayoutsByCode(string layoutCode)
         {
-            var content = _contextDCI.LnsLayout.Where(x => x.LayoutCode == layoutCode).OrderBy(x => x.LayoutCode).ToList();
+            var content = _contextDCI.LnsLayouts.Where(x => x.LayoutCode == layoutCode).OrderBy(x => x.LayoutCode).ToList();
             return Ok(content);
         }
 
@@ -438,7 +385,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout/equipment/del/{eqpId}")]
         public IActionResult DelEquipmentOfLayout(string eqpId)
         {
-            var content = _contextDCI.LnsEquipment.FirstOrDefault(x => x.EqpId == eqpId);
+            var content = _contextDCI.LnsEquipments.FirstOrDefault(x => x.EqpId == eqpId);
             if (content != null)
             {
                 _contextDCI.Remove(content);
@@ -463,13 +410,13 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/log/get/{id}")]
         public IActionResult getLogByEqpId(string id)
         {
-            var equipmentLog = _contextDCI.LnsEquipmentCheckLog.ToList();
+            var equipmentLog = _contextDCI.LnsEquipmentCheckLogs.ToList();
             if (id != "" && id != "ALL")
             {
                 equipmentLog = equipmentLog.Where(x => x.EqpId == id).ToList();
             }
             var content = from eqpLog in equipmentLog
-                          join emp in _contextDCI.Employee
+                          join emp in _contextDCI.Employees
                           on eqpLog.EqpCheckBy equals emp.Code
                           select new
                           {
@@ -505,9 +452,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/layout/equipment/{layoutCode}")]
         public IActionResult GetEquipmentOfLayout(string layoutCode)
         {
-            var layout = _contextDCI.LnsLayout.FirstOrDefault(x => x.LayoutCode == layoutCode);
-            var content = from eqp in _contextDCI.LnsEquipment.Where(x => x.LayoutCode == layoutCode).ToList()
-                          join master in _contextDCI.LnsEquipmentMaster
+            var layout = _contextDCI.LnsLayouts.FirstOrDefault(x => x.LayoutCode == layoutCode);
+            var content = from eqp in _contextDCI.LnsEquipments.Where(x => x.LayoutCode == layoutCode).ToList()
+                          join master in _contextDCI.LnsEquipmentMasters
                           on eqp.ObjId equals master.ObjId
                           select new
                           {
@@ -537,12 +484,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/equipment/axis/")]
         public IActionResult UpdateAxisEquipment([FromBody] LnsEquipment param)
         {
-            var content = _contextDCI.LnsEquipment.Where(x => x.EqpId == param.EqpId).ToList();
+            var content = _contextDCI.LnsEquipments.Where(x => x.EqpId == param.EqpId).ToList();
             foreach (LnsEquipment equipment in content)
             {
                 equipment.EqpX = param.EqpX;
                 equipment.EqpY = param.EqpY;
-                _contextDCI.LnsEquipment.Update(equipment).Property(x => x.EqpPriority).IsModified = false;
+                _contextDCI.LnsEquipments.Update(equipment).Property(x => x.EqpPriority).IsModified = false;
             }
             int res = _contextDCI.SaveChanges();
             return Ok(new
@@ -558,16 +505,29 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/getLayoutlist")]
         public IActionResult GetLayoutList([FromBody] MParamObjectCodeInfo param)
         {
-            List<MpckLayout> oLayouts = new List<MpckLayout>();
-            if (param.ObjCode.Trim() == "")
+            List<MpckLayout> oLayouts = oLayouts = _contextSCM.MpckLayouts.Where(l => l.LayoutStatus == "ACTIVE").OrderBy(x=>x.Factory).ToList();
+            if (param.factory != "")
             {
-                oLayouts = _contxMP.MpckLayout.ToList();
-                List<BoardDatum> boardList = _contextPDB.BoardData.ToList();
+                oLayouts = oLayouts.Where(x => x.Factory == param.factory).ToList();
             }
-            else
+            if (param.layoutCode != null && param.layoutCode != "")
             {
-                oLayouts = _contxMP.MpckLayout.Where(l => l.LayoutCode == param.ObjCode && l.LayoutStatus == "ACTIVE").ToList();
+                oLayouts = oLayouts.Where(x => x.LayoutCode == param.layoutCode).ToList();
             }
+
+            //if (param.ObjCode != null && param.ObjCode.Trim() == "")
+            //{
+            //    oLayouts = _contextSCM.MpckLayouts.ToList();
+            //    List<BoardDatum> boardList = _contextPDB.BoardData.ToList();
+            //}
+            //else if (param.ObjCode != null && param.ObjCode != "")
+            //{
+            //    oLayouts = _contextSCM.MpckLayouts.Where(l => l.LayoutCode == param.ObjCode && l.LayoutStatus == "ACTIVE").ToList();
+            //}
+            //else
+            //{
+            //    oLayouts = _contextSCM.MpckLayouts.Where(l => l.LayoutStatus == "ACTIVE").ToList();
+            //}
             return Ok(oLayouts);
         }
 
@@ -576,7 +536,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult AddLayout([FromBody] MpckLayout param)
         {
             string dockey = "MPCK_LAYOUT";
-            List<SpDCRunNbr> nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
+            List<SpDCRunNbr> nbr = _contextSCM.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
 
             try
             {
@@ -595,9 +555,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     oLayout.UpdateBy = param.UpdateBy;
                     oLayout.UpdateDate = DateTime.Now;
 
-                    _contxMP.MpckLayout.Attach(oLayout);
-                    _contxMP.Entry(oLayout).State = EntityState.Added;
-                    int res = _contxMP.SaveChanges();
+                    _contextSCM.MpckLayouts.Attach(oLayout);
+                    _contextSCM.Entry(oLayout).State = EntityState.Added;
+                    int res = _contextSCM.SaveChanges();
 
                     return Ok(new { status = res, msg = nbr[0].RunNbr });
                 }
@@ -616,15 +576,15 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/updateStatusLayout")]
         public IActionResult UpdateStatusLayout([FromBody] MParamObjectStatusInfo param)
         {
-            List<MpckLayout> oLayouts = _contxMP.MpckLayout.Where(m => m.LayoutCode == param.ObjCode).ToList();
+            List<MpckLayout> oLayouts = _contextSCM.MpckLayouts.Where(m => m.LayoutCode == param.ObjCode).ToList();
 
             if (oLayouts.Count > 0)
             {
                 MpckLayout oLayout = oLayouts[0];
                 oLayout.LayoutStatus = param.ObjStatus;
-                _contxMP.MpckLayout.Attach(oLayout);
-                _contxMP.Entry(oLayout).State = EntityState.Modified;
-                int res = _contxMP.SaveChanges();
+                _contextSCM.MpckLayouts.Attach(oLayout);
+                _contextSCM.Entry(oLayout).State = EntityState.Modified;
+                int res = _contextSCM.SaveChanges();
 
                 return Ok(new { status = res });
             }
@@ -643,7 +603,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         {
             //&& (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString()+"0")
 
-            List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.LayoutStatus == "ACTIVE" && o.LayoutCode == param.LayoutCode).ToList();
+            List<ViMpckObjectList> oObjects = _contextSCM.ViMpckObjectLists.Where(o => o.LayoutStatus == "ACTIVE" && o.LayoutCode == param.LayoutCode).ToList();
+
             DateTime ctNow = DateTime.Now.AddHours(-8);
             string ymd = ctNow.ToString("yyyyMMdd");
             string ymd2 = ctNow.AddDays(1).ToString("yyyyMMdd");
@@ -652,21 +613,21 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                             && (o.Odate == ctNow.Date || o.Odate == ctNow.AddDays(1).Date)
                             && (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString() + "0")
                             ).ToList();
-            Service serv = new Service(_contextDCI, _contxMP, _contxHRM);
+            Service serv = new Service(_contextDCI, _contextSCM, _contxHRM);
             if (oObjects.FirstOrDefault(x => x.ObjPriority != 0) == null)
             {
                 int priority = 0;
                 foreach (ViMpckObjectList item in oObjects.OrderBy(b => b.MstOrder).ToList())
                 {
-                    MpckObject itemContext = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == item.ObjCode);
+                    MpckObject itemContext = _contextSCM.MpckObjects.FirstOrDefault(x => x.ObjCode == item.ObjCode);
                     if (itemContext != null)
                     {
                         itemContext.ObjPriority = priority;
-                        _contxMP.MpckObject.Update(itemContext);
+                        _contextSCM.MpckObjects.Update(itemContext);
                         priority++;
                     }
                 }
-                _contxMP.SaveChanges();
+                _contextSCM.SaveChanges();
             }
 
             oObjects = oObjects.FirstOrDefault(x => x.ObjPriority != 0) == null ? oObjects.OrderBy(b => b.MstOrder).ToList() : oObjects.OrderBy(b => b.ObjPriority).ToList();
@@ -714,20 +675,18 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                              obj.ObjBorderWidth,
                              obj.ObjFontSize,
                              obj.ObjFontColor,
-                             obj.ObjPriority,
                              sync = false,
-                             obj.ObjPosition
+                             obj.ObjPosition,
+                             obj.ObjPriority,
                          };
             return Ok(result.OrderByDescending(x => x.ObjPriority).ToList());
-
         }
-
 
         [HttpPost]
         [Route("/mpck/getObjectlistbyCode")]
         public IActionResult GetObjectListByCode([FromBody] MParamObjectCodeInfo param)
         {
-            List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.ObjStatus == "ACTIVE" && o.ObjCode == param.ObjCode).ToList();
+            List<ViMpckObjectList> oObjects = _contextSCM.ViMpckObjectLists.Where(o => o.ObjStatus == "ACTIVE" && o.ObjCode == param.ObjCode).ToList();
             DateTime ctNow = DateTime.Now.AddHours(-8);
             List<OtrqReq> oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
                             && (o.Odate == ctNow.Date || o.Odate == ctNow.AddDays(1).Date) && o.Code == oObjects[0].EmpCode
@@ -784,31 +743,31 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult GetObjectInfoByCode([FromBody] MParamObjectCodeInfo param)
         {
             //***** Object Info *******
-            List<ViMpckObjectList> oObjects = _contxMP.ViMpckObjectList.Where(o => o.ObjStatus == "ACTIVE" && o.ObjCode == param.ObjCode).ToList();
+            List<ViMpckObjectList> oObjects = _contextSCM.ViMpckObjectLists.Where(o => o.ObjStatus == "ACTIVE" && o.ObjCode == param.ObjCode).ToList();
             object result = (dynamic)null;
 
             //***** Employee Info *******
             if (oObjects.Count > 0)
             {
                 ViMpckObjectList oObject = oObjects[0];
-                List<MpckDictionary> oMQs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictType == "MQ").ToList();
-                List<MpckDictionary> oSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictType == "SA").ToList();
+                List<MpckDictionary> oMQs = _contextSCM.MpckDictionaries.Where(d => d.DictRefCode == param.ObjCode && d.DictType == "MQ").ToList();
+                List<MpckDictionary> oSAs = _contextSCM.MpckDictionaries.Where(d => d.DictRefCode == param.ObjCode && d.DictType == "SA").ToList();
 
-                List<TrLineProcess> oMQALLs = _contextDCI.TrLineProcess.Where(l => l.ProcType == "MQ").ToList();
-                List<SkcDictMstr> oSAALLs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
+                List<TrLineProcess> oMQALLs = _contextDCI.TrLineProcesses.Where(l => l.ProcType == "MQ").ToList();
+                List<SkcDictMstr> oSAALLs = _contextSCM.SkcDictMstrs.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
 
                 //****** Log ******
                 object arLogObj = new { };
-                arLogObj = _contxMP.ViMpckCheckInOutLog.Where(l => l.ObjCode == param.ObjCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
+                arLogObj = _contextSCM.ViMpckCheckInOutLogs.Where(l => l.ObjCode == param.ObjCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
 
                 //******* LOG EMP *****/
-                MpckObject oObj = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == param.ObjCode);
+                MpckObject oObj = _contextSCM.MpckObjects.FirstOrDefault(x => x.ObjCode == param.ObjCode);
                 object arLogEmpObj = new { };
                 if (oObj != null)
                 {
                     if (oObj.EmpCode != "")
                     {
-                        arLogObj = _contxMP.ViMpckCheckInOutLog.Where(l => l.EmpCode == oObj.EmpCode).OrderByDescending(o => o.CkdateTime).ToList().Take(10);
+                        arLogObj = _contextSCM.ViMpckCheckInOutLogs.Where(l => l.EmpCode == oObj.EmpCode).OrderByDescending(o => o.CkdateTime).ToList().Take(10);
                     }
                 }
                 object arObj_MQ = new { };
@@ -843,8 +802,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
                     if (oEmp != null)
                     {
-                        var oEmpMQs = _contextDCI.ViTrTrainessLog.Where(tr => tr.EmpCode == oEmp.Code && tr.Result == "P" && tr.Status == "post").ToList().GroupBy(g => g.MqNo);
-                        var oEmpSAs = _contxMP.SkcLicenseTraining.Where(ct => ct.Empcode == oEmp.Code && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList().GroupBy(g => g.DictCode);
+                        var oEmpMQs = _contextDCI.ViTrTrainessLogs.Where(tr => tr.EmpCode == oEmp.Code && tr.Result == "P" && tr.Status == "post").ToList().GroupBy(g => g.MqNo);
+                        var oEmpSAs = _contextSCM.SkcLicenseTrainings.Where(ct => ct.Empcode == oEmp.Code && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList().GroupBy(g => g.DictCode);
 
                         object arEmp_MQ = new { };
 
@@ -876,9 +835,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
                         //****** Log ******
                         object arLogEmp = new { };
-                        arLogEmp = _contxMP.ViMpckCheckInOutLog.Where(l => l.EmpCode == oObject.EmpCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
+                        arLogEmp = _contextSCM.ViMpckCheckInOutLogs.Where(l => l.EmpCode == oObject.EmpCode).ToList().Take(10).OrderByDescending(o => o.CkdateTime);
 
-                        Service serv = new Service(_contextDCI, _contxMP, _contxHRM);
+                        Service serv = new Service(_contextDCI, _contextSCM, _contxHRM);
                         result = from obj in oObjects
                                  select new
                                  {
@@ -973,11 +932,11 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             List<MpckObject> oMstObjs = new List<MpckObject>();
             if (param.ObjCode.Trim() == "")
             {
-                oMstObjs = _contxMP.MpckObject.ToList();
+                oMstObjs = _contextSCM.MpckObjects.ToList();
             }
             else
             {
-                oMstObjs = _contxMP.MpckObject.Where(l => l.ObjCode == param.ObjCode).ToList();
+                oMstObjs = _contextSCM.MpckObjects.Where(l => l.ObjCode == param.ObjCode).ToList();
             }
 
             return Ok(oMstObjs);
@@ -989,12 +948,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult AddObject([FromBody] MParamObjectAddInfo param)
         {
             string dockey = (param.ObjType == "MP") ? "MPCK_OBJECT_MP" : "MPCK_OBJECT_OTH";
-            List<SpDCRunNbr> nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
+            List<SpDCRunNbr> nbr = _contextSCM.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
             try
             {
                 if (nbr.Count > 0)
                 {
-                    MpckObject contentLast = _contxMP.MpckObject.OrderByDescending(x => x.ObjPriority).FirstOrDefault();
+                    MpckObject contentLast = _contextSCM.MpckObjects.OrderByDescending(x => x.ObjPriority).FirstOrDefault();
                     int? priority = contentLast != null ? contentLast.ObjPriority + 1 : 0;
                     MpckObject mObj = new MpckObject();
                     mObj.ObjCode = nbr[0].RunNbr;
@@ -1021,20 +980,20 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     mObj.ObjPriority = 0;
                     mObj.ObjPosition = "OP";
 
-                    _contxMP.MpckObject.Attach(mObj);
-                    _contxMP.Entry(mObj).State = EntityState.Added;
-                    int res = _contxMP.SaveChanges();
+                    _contextSCM.MpckObjects.Attach(mObj);
+                    _contextSCM.Entry(mObj).State = EntityState.Added;
+                    int res = _contextSCM.SaveChanges();
                     if (res == 1)
                     {
-                        List<MpckObject> rObjByLayout = _contxMP.MpckObject.Where(x => x.LayoutCode == param.LayoutCode && x.ObjCode != nbr[0].RunNbr).OrderBy(x => x.ObjPriority).ToList();
+                        List<MpckObject> rObjByLayout = _contextSCM.MpckObjects.Where(x => x.LayoutCode == param.LayoutCode && x.ObjCode != nbr[0].RunNbr).OrderBy(x => x.ObjPriority).ToList();
                         int new_priority = 1;
                         foreach (MpckObject oObj in rObjByLayout)
                         {
                             oObj.ObjPriority = new_priority;
-                            _contxMP.MpckObject.Update(oObj);
+                            _contextSCM.MpckObjects.Update(oObj);
                             new_priority = new_priority + 1;
                         }
-                        _contxMP.SaveChanges();
+                        _contextSCM.SaveChanges();
                     }
                     return Ok(new { status = res, msg = nbr[0].RunNbr });
                 }
@@ -1047,49 +1006,42 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 return Ok(new { status = "0", msg = "error" });
             }
-
         }
 
         [HttpPost]
         [Route("/mpck/deleteObject")]
         public IActionResult DeleteObject([FromBody] MParamObjectCodeInfo param)
         {
-
-            List<MpckObject> oObjects = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+            List<MpckObject> oObjects = _contextSCM.MpckObjects.Where(o => o.ObjCode == param.ObjCode).ToList();
 
             if (oObjects.Count > 0)
             {
                 MpckObject oObject = oObjects[0];
-
-                _contxMP.MpckObject.Attach(oObject);
-                _contxMP.Entry(oObject).State = EntityState.Deleted;
-                int res = _contxMP.SaveChanges();
+                _contextSCM.MpckObjects.Attach(oObject);
+                _contextSCM.Entry(oObject).State = EntityState.Deleted;
+                int res = _contextSCM.SaveChanges();
                 return Ok(new { status = res });
             }
             else
             {
                 return Ok(new { status = "0" });
             }
-
-
         }
 
         [HttpPost]
         [Route("/mpck/editObjectTitle")]
         public IActionResult EditTitleObject([FromBody] MParamObjectEditTitleInfo param)
         {
-            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+            List<MpckObject> oObjs = _contextSCM.MpckObjects.Where(o => o.ObjCode == param.ObjCode).ToList();
 
             if (oObjs.Count > 0)
             {
                 MpckObject oObjUpd = oObjs[0];
                 oObjUpd.ObjTitle = param.ObjTitle;
                 oObjUpd.ObjSubtitle = param.ObjSubtitle;
-
-                _contxMP.MpckObject.Attach(oObjUpd);
-                _contxMP.Entry(oObjUpd).State = EntityState.Modified;
-                int changed = _contxMP.SaveChanges();
-
+                _contextSCM.MpckObjects.Attach(oObjUpd);
+                _contextSCM.Entry(oObjUpd).State = EntityState.Modified;
+                int changed = _contextSCM.SaveChanges();
                 return Ok(new { status = changed });
             }
             else
@@ -1103,7 +1055,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/editObjectPosition")]
         public IActionResult EditPositionObject([FromBody] MParamObjectEditXYInfo param)
         {
-            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode).ToList();
+            List<MpckObject> oObjs = _contextSCM.MpckObjects.Where(o => o.ObjCode == param.ObjCode).ToList();
 
             if (oObjs.Count > 0)
             {
@@ -1111,9 +1063,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 oObjUpd.ObjX = param.ObjX;
                 oObjUpd.ObjY = param.ObjY;
 
-                _contxMP.MpckObject.Attach(oObjUpd);
-                _contxMP.Entry(oObjUpd).State = EntityState.Modified;
-                int changed = _contxMP.SaveChanges();
+                _contextSCM.MpckObjects.Attach(oObjUpd);
+                _contextSCM.Entry(oObjUpd).State = EntityState.Modified;
+                int changed = _contextSCM.SaveChanges();
 
                 return (changed == 1) ? Ok(new { status = "updated" }) : Ok(new { status = $"not update ({changed})" });
             }
@@ -1128,14 +1080,14 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult GetFactory([FromBody] MParamFactory param)
         {
             List<MOutputManagementLayout> listLayout = new List<MOutputManagementLayout>();
-            var listFactory = _contxMP.MpckLayout.Where(x => x.Factory == param.Factory && x.LayoutStatus == "ACTIVE").ToList();
+            var listFactory = _contextSCM.MpckLayouts.Where(x => x.Factory == param.Factory && x.LayoutStatus == "ACTIVE").ToList();
             foreach (var item in listFactory)
             {
                 MOutputManagementLayout oLayout = new MOutputManagementLayout();
                 oLayout.layoutName = item.LayoutName;
                 oLayout.layoutCode = item.LayoutCode;
                 List<MOutputManagementObject> itemObj = new List<MOutputManagementObject>();
-                var oListObjs = _contxMP.MpckObject.Where(x => x.LayoutCode == item.LayoutCode && x.ObjType == "MP" && x.ObjTitle != "" && x.ObjStatus == "ACTIVE").ToList();
+                var oListObjs = _contextSCM.MpckObjects.Where(x => x.LayoutCode == item.LayoutCode && x.ObjType == "MP" && x.ObjTitle != "" && x.ObjStatus == "ACTIVE").ToList();
                 oLayout.listObj = oListObjs;
                 listLayout.Add(oLayout);
             }
@@ -1161,12 +1113,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 string layoutCode = param.layoutCode;
                 if (objCode != "")
                 {
-                    oMstObjs = _contxMP.MpckObjectMaster.Where(l => l.ObjMasterId == objCode).ToList();
+                    oMstObjs = _contextSCM.MpckObjectMasters.Where(l => l.ObjMasterId == objCode).ToList();
 
                 }
                 else
                 {
-                    oMstObjs = _contxMP.MpckObjectMaster.Where(l => l.MstStatus == "ACTIVE").ToList();
+                    oMstObjs = _contextSCM.MpckObjectMasters.Where(l => l.MstStatus == "ACTIVE").ToList();
                 }
                 if (layoutCode != null && layoutCode != "" && layoutCode != "ALL")
                 {
@@ -1187,7 +1139,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult generateMasterNbr()
         {
             string dockey = "MPCK_MASTER";
-            List<SpDCRunNbr> nbr = _contxMP.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
+            List<SpDCRunNbr> nbr = _contextSCM.SpDCRunNbr.FromSqlRaw($"sp_DCRunNbr '{dockey}','' ").ToList();
             if (nbr.Count > 0)
             {
                 return Ok(new { DocNbr = nbr[0].RunNbr });
@@ -1213,9 +1165,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 oMst.LayoutCode = param.LayoutCode;
                 oMst.MstStatus = "ACTIVE";
 
-                _contxMP.MpckObjectMaster.Attach(oMst);
-                _contxMP.Entry(oMst).State = EntityState.Added;
-                int res = _contxMP.SaveChanges();
+                _contextSCM.MpckObjectMasters.Attach(oMst);
+                _contextSCM.Entry(oMst).State = EntityState.Added;
+                int res = _contextSCM.SaveChanges();
 
                 return Ok(new { status = res, msg = param.ObjMasterId });
             }
@@ -1230,7 +1182,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/editMaster")]
         public IActionResult EditMaster([FromBody] MpckObjectMaster param)
         {
-            List<MpckObjectMaster> oMasters = _contxMP.MpckObjectMaster.Where(m => m.ObjMasterId == param.ObjMasterId).ToList();
+            List<MpckObjectMaster> oMasters = _contextSCM.MpckObjectMasters.Where(m => m.ObjMasterId == param.ObjMasterId).ToList();
 
             if (oMasters.Count > 0)
             {
@@ -1240,9 +1192,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 oMaster.MstStatus = param.MstStatus;
                 oMaster.MstOrder = param.MstOrder;
 
-                _contxMP.MpckObjectMaster.Attach(oMaster);
-                _contxMP.Entry(oMaster).State = EntityState.Modified;
-                int res = _contxMP.SaveChanges();
+                _contextSCM.MpckObjectMasters.Attach(oMaster);
+                _contextSCM.Entry(oMaster).State = EntityState.Modified;
+                int res = _contextSCM.SaveChanges();
 
                 return Ok(new { status = res });
             }
@@ -1257,15 +1209,15 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/updateStatusMaster")]
         public IActionResult UpdateStatusMaster([FromBody] MParamObjectStatusInfo param)
         {
-            List<MpckObjectMaster> oMasters = _contxMP.MpckObjectMaster.Where(m => m.ObjMasterId == param.ObjCode).ToList();
+            List<MpckObjectMaster> oMasters = _contextSCM.MpckObjectMasters.Where(m => m.ObjMasterId == param.ObjCode).ToList();
 
             if (oMasters.Count > 0)
             {
                 MpckObjectMaster oMaster = oMasters[0];
                 oMaster.MstStatus = param.ObjStatus;
-                _contxMP.MpckObjectMaster.Attach(oMaster);
-                _contxMP.Entry(oMaster).State = EntityState.Modified;
-                int res = _contxMP.SaveChanges();
+                _contextSCM.MpckObjectMasters.Attach(oMaster);
+                _contextSCM.Entry(oMaster).State = EntityState.Modified;
+                int res = _contextSCM.SaveChanges();
 
                 return Ok(new { status = res });
             }
@@ -1283,7 +1235,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/getMQSAListByLayout")]
         public IActionResult SearchMQSAByLayout([FromBody] MParamDictSearchInfo param)
         {
-            List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode2 == param.SearchCode && d.DictType == param.SearchType).ToList();
+            List<MpckDictionary> oMQSAs = _contextSCM.MpckDictionaries.Where(d => d.DictRefCode2 == param.SearchCode && d.DictType == param.SearchType).ToList();
             return Ok(oMQSAs);
         }
 
@@ -1291,7 +1243,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/getMQSAListByObject")]
         public IActionResult SearchMQSAByObject([FromBody] MParamDictSearchInfo param)
         {
-            List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.SearchCode && d.DictType == param.SearchType).ToList();
+            List<MpckDictionary> oMQSAs = _contextSCM.MpckDictionaries.Where(d => d.DictRefCode == param.SearchCode && d.DictType == param.SearchType).ToList();
             return Ok(oMQSAs);
         }
 
@@ -1301,7 +1253,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult AddMQSA([FromBody] MParamDictInfo param)
         {
 
-            List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictCode == param.DictCode && d.DictType == param.DictType).ToList();
+            List<MpckDictionary> oMQSAs = _contextSCM.MpckDictionaries.Where(d => d.DictRefCode == param.ObjCode && d.DictCode == param.DictCode && d.DictType == param.DictType).ToList();
 
             if (oMQSAs.Count == 0)
             {
@@ -1315,9 +1267,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 oDict.DictRefName = "";
                 oDict.DictRefSubName = "";
 
-                _contxMP.MpckDictionary.Attach(oDict);
-                _contxMP.Entry(oDict).State = EntityState.Added;
-                int res = _contxMP.SaveChanges();
+                _contextSCM.MpckDictionaries.Attach(oDict);
+                _contextSCM.Entry(oDict).State = EntityState.Added;
+                int res = _contextSCM.SaveChanges();
 
                 return Ok(new { status = res });
             }
@@ -1331,15 +1283,15 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/deleteMQSA")]
         public IActionResult DeleteMQSA([FromBody] MParamDictInfo param)
         {
-            List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode && d.DictCode == param.DictCode && d.DictType == param.DictType).ToList();
+            List<MpckDictionary> oMQSAs = _contextSCM.MpckDictionaries.Where(d => d.DictRefCode == param.ObjCode && d.DictCode == param.DictCode && d.DictType == param.DictType).ToList();
 
             if (oMQSAs.Count > 0)
             {
                 MpckDictionary oDict = oMQSAs[0];
 
-                _contxMP.MpckDictionary.Attach(oDict);
-                _contxMP.Entry(oDict).State = EntityState.Deleted;
-                int res = _contxMP.SaveChanges();
+                _contextSCM.MpckDictionaries.Attach(oDict);
+                _contextSCM.Entry(oDict).State = EntityState.Deleted;
+                int res = _contextSCM.SaveChanges();
 
                 return Ok(new { status = res });
             }
@@ -1355,7 +1307,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         public IActionResult GetSAList()
         {
 
-            List<SkcDictMstr> oSAs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
+            List<SkcDictMstr> oSAs = _contextSCM.SkcDictMstrs.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
             return Ok(oSAs);
         }
 
@@ -1364,7 +1316,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/getMQList")]
         public IActionResult GetMQList()
         {
-            List<TrLineProcess> oMQs = _contextDCI.TrLineProcess.Where(l => l.ProcType == "MQ").ToList();
+            List<TrLineProcess> oMQs = _contextDCI.TrLineProcesses.Where(l => l.ProcType == "MQ").ToList();
             return Ok(oMQs);
         }
 
@@ -1377,11 +1329,11 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/checkInOut")]
         public IActionResult CheckInOut([FromBody] MParamCheckInOutInfo param)
         {
-            List<MpckObject> oObjs = _contxMP.MpckObject.Where(o => o.ObjCode == param.ObjCode && o.ObjStatus == "ACTIVE").ToList();
+            List<MpckObject> oObjs = _contextSCM.MpckObjects.Where(o => o.ObjCode == param.ObjCode && o.ObjStatus == "ACTIVE").ToList();
             if (oObjs.Count > 0)
             {
                 MpckObject oObjUpd = oObjs[0];
-                MpckLayout oLayout = _contxMP.MpckLayout.Where(l => l.LayoutCode == oObjUpd.LayoutCode).FirstOrDefault() ?? new MpckLayout();
+                MpckLayout oLayout = _contextSCM.MpckLayouts.Where(l => l.LayoutCode == oObjUpd.LayoutCode).FirstOrDefault() ?? new MpckLayout();
                 bool stsUpd = false;
                 if (param.Cktype == "IN")
                 {
@@ -1403,7 +1355,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
 
 
                         //****** check in ******
-                        List<MpckDictionary> oMQSAs = _contxMP.MpckDictionary.Where(d => d.DictRefCode == param.ObjCode).OrderBy(or => or.DictType).ToList();
+                        List<MpckDictionary> oMQSAs = _contextSCM.MpckDictionaries.Where(d => d.DictRefCode == param.ObjCode).OrderBy(or => or.DictType).ToList();
                         if (oMQSAs.Count > 0)
                         {
                             //***** SET Default ******
@@ -1415,8 +1367,8 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                             //***************************************
                             //      CHECK EMPLOYEE HAVE MQ / SA 
                             //***************************************
-                            List<ViTrTrainessLog> oEmpMQs = _contextDCI.ViTrTrainessLog.Where(tr => tr.EmpCode == param.EmpCode && tr.Result == "P" && tr.Status == "post").ToList();
-                            List<SkcLicenseTraining> oEmpSAs = _contxMP.SkcLicenseTraining.Where(ct => ct.Empcode == param.EmpCode && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList();
+                            List<ViTrTrainessLog> oEmpMQs = _contextDCI.ViTrTrainessLogs.Where(tr => tr.EmpCode == param.EmpCode && tr.Result == "P" && tr.Status == "post").ToList();
+                            List<SkcLicenseTraining> oEmpSAs = _contextSCM.SkcLicenseTrainings.Where(ct => ct.Empcode == param.EmpCode && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList();
 
                             //***** Loop Foreach ******
                             foreach (MpckDictionary oMQSA in oMQSAs)
@@ -1519,9 +1471,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 {
                     //****** Update Object Check In/Out ********
                     oObjUpd.ObjLastCheckDt = DateTime.Now;
-                    _contxMP.MpckObject.Attach(oObjUpd);
-                    _contxMP.Entry(oObjUpd).State = EntityState.Modified;
-                    int changed = _contxMP.SaveChanges();
+                    _contextSCM.MpckObjects.Attach(oObjUpd);
+                    _contextSCM.Entry(oObjUpd).State = EntityState.Modified;
+                    int changed = _contextSCM.SaveChanges();
 
 
                     //****** Insert Log Check In/Out ********
@@ -1534,9 +1486,9 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     oLog.EmpCode = param.EmpCode;
                     oLog.ObjCode = param.ObjCode;
 
-                    _contxMP.MpckCheckInLog.Attach(oLog);
-                    _contxMP.Entry(oLog).State = EntityState.Added;
-                    int added = _contxMP.SaveChanges();
+                    _contextSCM.MpckCheckInLogs.Attach(oLog);
+                    _contextSCM.Entry(oLog).State = EntityState.Added;
+                    int added = _contextSCM.SaveChanges();
 
                     return (changed == 1) ? Ok(new { status = changed, msg = "OK" }) : Ok(new { status = "0", msg = "can not updated" });
                 }
@@ -1561,7 +1513,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         {
             string objCode = obj.objCode;
             MModels.MManSkill resp = new MModels.MManSkill();
-            Service serv = new Service(_contextDCI, _contxMP, _contxHRM);
+            Service serv = new Service(_contextDCI, _contextSCM, _contxHRM);
             if (objCode != null)
             {
                 resp = serv.GetEmployeeListInMQSA(objCode);
@@ -1595,13 +1547,13 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             {
                 await file.CopyToAsync(stream);
             }
-            var obj = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == objCode);
+            var obj = _contextSCM.MpckObjects.FirstOrDefault(x => x.ObjCode == objCode);
             if (obj != null)
             {
                 var newObject = obj;
                 newObject.ObjPicture = $"http://dciweb.dci.daikin.co.jp/dcimanpower/{targetPath}/{fileName}".Replace("/\\", "/").Replace("\\", "/");
-                _contxMP.MpckObject.Update(newObject);
-                int res = _contxMP.SaveChanges();
+                _contextSCM.MpckObjects.Update(newObject);
+                int res = _contextSCM.SaveChanges();
                 return Ok(new
                 {
                     status = res
@@ -1621,7 +1573,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/updateObject")]
         public async Task<IActionResult> UpdateObject([FromBody] ViMpckObjectList param)
         {
-            MpckObject context = await _contxMP.MpckObject.FirstOrDefaultAsync(x => x.ObjCode == param.ObjCode);
+            MpckObject context = await _contextSCM.MpckObjects.FirstOrDefaultAsync(x => x.ObjCode == param.ObjCode);
             if (context != null)
             {
                 context.ObjBackgroundColor = param.ObjBackgroundColor;
@@ -1634,14 +1586,14 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 context.ObjBorderWidth = param.ObjBorderWidth;
                 context.ObjFontSize = param.ObjFontSize;
                 context.ObjFontColor = param.ObjFontColor;
-                _contxMP.MpckObject.Update(context);
-                int update = await _contxMP.SaveChangesAsync();
+                _contextSCM.MpckObjects.Update(context);
+                int update = await _contextSCM.SaveChangesAsync();
                 if (update > 0)
                 {
                     return Ok(new
                     {
                         status = update,
-                        obj = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == param.ObjCode)
+                        obj = _contextSCM.MpckObjects.FirstOrDefault(x => x.ObjCode == param.ObjCode)
                     });
                 }
                 else
@@ -1668,7 +1620,7 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             string objCode = param.objCode;
             string action = param.objAction;
             bool status = false;
-            MpckObject content = _contxMP.MpckObject.FirstOrDefault(x => x.ObjCode == objCode);
+            MpckObject content = _contextSCM.MpckObjects.FirstOrDefault(x => x.ObjCode == objCode);
             if (content != null)
             {
                 string layoutCode = content.LayoutCode;
@@ -1680,18 +1632,18 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                         //priority = priority - 1;
                         if (priority >= 0)
                         {
-                            MpckObject contentPrev = _contxMP.MpckObject.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority > priority);
+                            MpckObject contentPrev = _contextSCM.MpckObjects.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority > priority);
                             if (contentPrev != null)
                             {
                                 int? priorityPrev = content.ObjPriority;
                                 content.ObjPriority = contentPrev.ObjPriority;
-                                _contxMP.MpckObject.Update(content);
-                                int updateCurrent = _contxMP.SaveChanges();
+                                _contextSCM.MpckObjects.Update(content);
+                                int updateCurrent = _contextSCM.SaveChanges();
                                 if (updateCurrent > 0)
                                 {
                                     contentPrev.ObjPriority = priorityPrev;
-                                    _contxMP.MpckObject.Update(contentPrev);
-                                    int updatePrev = _contxMP.SaveChanges();
+                                    _contextSCM.MpckObjects.Update(contentPrev);
+                                    int updatePrev = _contextSCM.SaveChanges();
                                     if (updatePrev > 0)
                                     {
                                         status = true;
@@ -1707,19 +1659,19 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                     {
                         if (priority >= 0)
                         {
-                            MpckObject contentPrev = _contxMP.MpckObject.OrderByDescending(x => x.ObjPriority).FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority < content.ObjPriority);
+                            MpckObject contentPrev = _contextSCM.MpckObjects.OrderByDescending(x => x.ObjPriority).FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority < content.ObjPriority);
                             if (contentPrev != null)
                             {
                                 int? priorityPrev = contentPrev.ObjPriority;
                                 int? priorityContent = content.ObjPriority;
                                 content.ObjPriority = priorityPrev;
-                                _contxMP.MpckObject.Update(content);
-                                int updateCurrent = _contxMP.SaveChanges();
+                                _contextSCM.MpckObjects.Update(content);
+                                int updateCurrent = _contextSCM.SaveChanges();
                                 if (updateCurrent > 0)
                                 {
                                     contentPrev.ObjPriority = priorityContent;
-                                    _contxMP.MpckObject.Update(contentPrev);
-                                    int updatePrev = _contxMP.SaveChanges();
+                                    _contextSCM.MpckObjects.Update(contentPrev);
+                                    int updatePrev = _contextSCM.SaveChanges();
                                     if (updatePrev > 0)
                                     {
                                         status = true;
@@ -1733,16 +1685,16 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 {
                     int prev = param.prev;
                     int next = param.next;
-                    var contextPrev = _contxMP.MpckObject.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority == prev);
-                    var contextNext = _contxMP.MpckObject.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority == next);
+                    var contextPrev = _contextSCM.MpckObjects.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority == prev);
+                    var contextNext = _contextSCM.MpckObjects.FirstOrDefault(x => x.LayoutCode == layoutCode && x.ObjPriority == next);
                     if (contextPrev != null && contextNext != null)
                     {
                         contextPrev.ObjPriority = next;
                         contextNext.ObjPriority = prev;
-                        _contxMP.MpckObject.Update(contextPrev);
-                        _contxMP.MpckObject.Update(contextNext);
+                        _contextSCM.MpckObjects.Update(contextPrev);
+                        _contextSCM.MpckObjects.Update(contextNext);
                     }
-                    int updateChange = _contxMP.SaveChanges();
+                    int updateChange = _contextSCM.SaveChanges();
                     if (updateChange > 0)
                     {
                         status = true;
@@ -1750,16 +1702,16 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 }
                 if (action == "back")
                 {
-                    List<MpckObject> listObj = await _contxMP.MpckObject.Where(x => x.LayoutCode == layoutCode && x.ObjCode != content.ObjCode).OrderBy(x => x.ObjPriority).ToListAsync();
+                    List<MpckObject> listObj = await _contextSCM.MpckObjects.Where(x => x.LayoutCode == layoutCode && x.ObjCode != content.ObjCode).OrderBy(x => x.ObjPriority).ToListAsync();
                     content.ObjPriority = 0;
                     int newPriority = 1;
                     foreach (MpckObject item in listObj)
                     {
                         item.ObjPriority = newPriority;
                         newPriority++;
-                        _contxMP.MpckObject.Update(item);
+                        _contextSCM.MpckObjects.Update(item);
                     }
-                    int updateBack = await _contxMP.SaveChangesAsync();
+                    int updateBack = await _contextSCM.SaveChangesAsync();
                     if (updateBack > 0)
                     {
                         status = true;
@@ -1767,19 +1719,19 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
                 }
                 if (action == "front")
                 {
-                    List<MpckObject> listObj = await _contxMP.MpckObject.Where(x => x.LayoutCode == layoutCode && x.ObjCode != content.ObjCode).OrderBy(x => x.ObjPriority).ToListAsync();
+                    List<MpckObject> listObj = await _contextSCM.MpckObjects.Where(x => x.LayoutCode == layoutCode && x.ObjCode != content.ObjCode).OrderBy(x => x.ObjPriority).ToListAsync();
                     int? lastPriority = listObj.LastOrDefault() != null ? listObj.LastOrDefault().ObjPriority : 100;
                     content.ObjPriority = lastPriority;
                     int? newPriority = lastPriority - 1;
-                    _contxMP.MpckObject.Update(content);
+                    _contextSCM.MpckObjects.Update(content);
                     listObj = listObj.OrderByDescending(x => x.ObjPriority).ToList();
                     foreach (MpckObject item in listObj.OrderByDescending(x => x.ObjPriority))
                     {
                         item.ObjPriority = newPriority;
                         newPriority--;
-                        _contxMP.MpckObject.Update(item);
+                        _contextSCM.MpckObjects.Update(item);
                     }
-                    int updateBack = await _contxMP.SaveChangesAsync();
+                    int updateBack = await _contextSCM.SaveChangesAsync();
                     if (updateBack > 0)
                     {
                         status = true;
@@ -1800,12 +1752,12 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
             bool status = false;
             string objCode = param.ObjCode;
             string position = param.ObjPosition;
-            MpckObject content = await _contxMP.MpckObject.FirstOrDefaultAsync(x => x.ObjCode == objCode);
+            MpckObject content = await _contextSCM.MpckObjects.FirstOrDefaultAsync(x => x.ObjCode == objCode);
             if (content != null)
             {
                 content.ObjPosition = position;
-                _contxMP.MpckObject.Update(content);
-                int update = await _contxMP.SaveChangesAsync();
+                _contextSCM.MpckObjects.Update(content);
+                int update = await _contextSCM.SaveChangesAsync();
                 if (update > 0)
                 {
                     status = true;
@@ -1863,10 +1815,10 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/getsamqofempcode/{empcode}")]
         public IActionResult GET_MQSA_OF_EMPCODE(string empcode)
         {
-            List<TrLineProcess> oMQALLs = _contextDCI.TrLineProcess.Where(l => l.ProcType == "MQ").ToList();
-            List<SkcDictMstr> oSAALLs = _contxMP.SkcDictMstr.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
-            var oEmpMQs = _contextDCI.ViTrTrainessLog.Where(tr => tr.EmpCode == empcode && tr.Result == "P" && tr.Status == "post").ToList().GroupBy(g => g.MqNo);
-            var oEmpSAs = _contxMP.SkcLicenseTraining.Where(ct => ct.Empcode == empcode && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList().GroupBy(g => g.DictCode);
+            List<TrLineProcess> oMQALLs = _contextDCI.TrLineProcesses.Where(l => l.ProcType == "MQ").ToList();
+            List<SkcDictMstr> oSAALLs = _contextSCM.SkcDictMstrs.Where(d => d.Code == d.RefCode && d.DictStatus == true && d.DictType == "LICENSE").ToList();
+            var oEmpMQs = _contextDCI.ViTrTrainessLogs.Where(tr => tr.EmpCode == empcode && tr.Result == "P" && tr.Status == "post").ToList().GroupBy(g => g.MqNo);
+            var oEmpSAs = _contextSCM.SkcLicenseTrainings.Where(ct => ct.Empcode == empcode && ct.EffectiveDate <= DateTime.Now && ct.ExpiredDate >= DateTime.Now).ToList().GroupBy(g => g.DictCode);
 
             object arEmp_MQ = new { };
 
@@ -1914,93 +1866,176 @@ namespace API_DCI_DIAGRAM_SVG.Controllers
         [Route("/mpck/getLayoutDetail/{layoutCode}")]
         public IActionResult GetLayoutDetail(string layoutCode)
         {
-            MpckLayout oLayout = _contxMP.MpckLayout.FirstOrDefault(x => x.LayoutCode == layoutCode);
+            MpckLayout oLayout = _contextSCM.MpckLayouts.FirstOrDefault(x => x.LayoutCode == layoutCode);
             return Ok(oLayout);
         }
 
         [HttpGet]
-        [Route("/mpck/get/test")]
-        public IActionResult MpckGetTest()
+        [Route("/mpck/getObjectsByLayoutCode/{layoutCode}")]
+        public IActionResult getObjectsByLayoutCode(string layoutCode)
         {
-            return Ok("MpckGetTest");
+            //&& (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString()+"0")
+
+            List<ViMpckObjectList> oObjects = _contextSCM.ViMpckObjectLists.Where(o => o.LayoutStatus == "ACTIVE" && o.LayoutCode == layoutCode).ToList();
+            DateTime ctNow = DateTime.Now.AddHours(-8);
+            string ymd = ctNow.ToString("yyyyMMdd");
+            string ymd2 = ctNow.AddDays(1).ToString("yyyyMMdd");
+
+            List<OtrqReq> oEmpOTs = _contxHRM.OtrqReq.Where(o => ((o.ReqStatus == "REQUEST" && o.ProgBit == "U") || (o.ReqStatus == "APPROVE" && (o.ProgBit == "M" || o.ProgBit == "F")))
+                            && (o.Odate == ctNow.Date || o.Odate == ctNow.AddDays(1).Date)
+                            && (o.Rq == ctNow.Day.ToString() || o.Rq == ctNow.Day.ToString() + "0")
+                            ).ToList();
+            Service serv = new Service(_contextDCI, _contextSCM, _contxHRM);
+            if (oObjects.FirstOrDefault(x => x.ObjPriority != 0) == null)
+            {
+                int priority = 0;
+                foreach (ViMpckObjectList item in oObjects.OrderBy(b => b.MstOrder).ToList())
+                {
+                    MpckObject itemContext = _contextSCM.MpckObjects.FirstOrDefault(x => x.ObjCode == item.ObjCode);
+                    if (itemContext != null)
+                    {
+                        itemContext.ObjPriority = priority;
+                        _contextSCM.MpckObjects.Update(itemContext);
+                        priority++;
+                    }
+                }
+                _contextSCM.SaveChanges();
+            }
+
+            oObjects = oObjects.FirstOrDefault(x => x.ObjPriority != 0) == null ? oObjects.OrderBy(b => b.MstOrder).ToList() : oObjects.OrderBy(b => b.ObjPriority).ToList();
+            var result = from obj in oObjects
+                         join ot in oEmpOTs
+                         on obj.EmpCode equals ot.Code into d2
+                         from f in d2.DefaultIfEmpty()
+                         select new
+                         {
+                             obj.ObjCode,
+                             obj.LayoutCode,
+                             obj.ObjMasterId,
+                             obj.ObjType,
+                             obj.ObjTitle,
+                             obj.ObjSubtitle,
+                             obj.ObjPath,
+                             obj.ObjX,
+                             obj.ObjY,
+                             obj.ObjStatus,
+                             obj.EmpCode,
+                             obj.ObjLastCheckDt,
+                             obj.LayoutName,
+                             obj.LayoutSubName,
+                             obj.Factory,
+                             obj.Line,
+                             obj.SubLine,
+                             obj.LayoutStatus,
+                             obj.BypassMq,
+                             obj.BypassSa,
+                             obj.Mq,
+                             obj.Sa,
+                             Ot = (obj.EmpCode != "") ? (f != null) ? "TRUE" : "FALSE" : "FALSE",
+                             obj.EmpImage,
+                             obj.EmpName,
+                             obj.ObjSvg,
+                             obj.MstOrder,
+                             manskill = serv.getCounter(obj.ObjCode).counter,
+                             obj.ObjPicture,
+                             objSA = serv.getSAofObj(obj.ObjCode),
+                             objMQ = serv.getMQofObj(obj.ObjCode),
+                             obj.ObjWidth,
+                             obj.ObjHeight,
+                             obj.ObjBackgroundColor,
+                             obj.ObjBorderColor,
+                             obj.ObjBorderWidth,
+                             obj.ObjFontSize,
+                             obj.ObjFontColor,
+                             obj.ObjPriority,
+                             sync = false,
+                             obj.ObjPosition
+                         };
+            return Ok(result.OrderByDescending(x => x.ObjPriority).ToList());
         }
 
 
         [HttpGet]
-        [Route("/aps/get/test")]
-        public IActionResult ApsGetTest()
+        [Route("/GetLayoutDetailByCode/{layoutCode}")]
+        public IActionResult GetLayoutDetailByCode(string layoutCode)
         {
+            MpckLayout mpckLayout = _contextSCM.MpckLayouts.FirstOrDefault(x => x.LayoutCode == layoutCode)!;
+            return Ok(mpckLayout);
+        }
 
-       //     DateTime dtNow = DateTime.Now;
-       //     DateTime plan_startDate = DateTime.ParseExact("18/06/2024", "dd/MM/yyyy", CultureInfo.InvariantCulture);
-       //     DateTime plan_endDate = DateTime.ParseExact("18/06/2024", "dd/MM/yyyy", CultureInfo.InvariantCulture);
-          
+        [HttpPost]
+        [Route("/UpdateLayoutDetail")]
+        public IActionResult UpdateLayoutDetial([FromBody] ParamUpdateLayoutDetail param)
+        {
+            string layoutCode = param.layoutCode;
+            MpckLayout mpckLayout = _contextSCM.MpckLayouts.FirstOrDefault(x => x.LayoutCode == layoutCode)!;
+            if (mpckLayout != null)
+            {
+                mpckLayout.LayoutName = param.layoutName;
+                mpckLayout.Width = param.width;
+                mpckLayout.Height = param.height;
+                mpckLayout.LayoutStatus = param.layoutStatus;
+                mpckLayout.BypassMq = param.bypassMQ;
+                mpckLayout.BypassSa = param.bypassSA;
+                mpckLayout.UpdateDate = DateTime.Now;
+                mpckLayout.UpdateBy = param.updateBy;
+                _contextSCM.MpckLayouts.Update(mpckLayout);
+                int update = _contextSCM.SaveChanges();
+                return Ok(new PropStatus()
+                {
+                    status = update > 0 ? true : false,
+                    message = $"เกิดข้อผิดพลาดระหว่างบันทึกข้อมูล : {layoutCode}"
+                });
+            }
+            else
+            {
+                return Ok(new PropStatus()
+                {
+                    status = false,
+                    message = $"ไม่พบข้อมูลพื้นที่ : {layoutCode}"
+                });
+            }
+        }
 
-
-       //     List<ApsSchema> rApsSchema = new List<ApsSchema>
-       //     {
-       //           new ApsSchema() { factory = "1", line = "ASSEMBLY LINE1 (1YC) Line 1", wcno = "901" },
-       //         new ApsSchema() { factory = "1", line = "ASSEMBLY LINE1 (1YC) Line 1", wcno = "901" },
-       //         new ApsSchema() { factory = "1", line = "FINAL-ASSEMBLY LINE1 (1YC) Line 1", wcno = "901" }
-       //     };
-       //     List<List<string>> rResult = new List<List<string>>();
-       //     // SET START TIME
-       //     List<string> rStartTime = new List<string>();
-       //     foreach (ApsSchema oScheman in rApsSchema)
-       //     {
-       //         rStartTime.Add("08:20");
-       //     }
-       //     rResult.Add(rStartTime);
-
-       //     // SET PLAN TODAY
-       //     string dd = dtNow.ToString("dd");
-       //     List<string> rPlan = new List<string>();
-       //     foreach (ApsSchema oScheman in rApsSchema)
-       //     {
-       //         string DailyQty = "";
-
-       //         Random rnd = new Random();
-       //         string pid = rnd.Next().ToString();
-
-       //         //CREATE TEMP DAILY DATA
-       //         SqlCommand sqlStore = new SqlCommand();
-       //         sqlStore.CommandText = "sp_APS_WK_DailyPlan";
-       //         sqlStore.CommandType = CommandType.StoredProcedure;
-       //         sqlStore.Parameters.Add(new SqlParameter("@pPID", pid));
-       //         sqlStore.Parameters.Add(new SqlParameter("@pWCNO", oScheman.wcno));
-       //         sqlStore.Parameters.Add(new SqlParameter("@pLINENAME", oScheman.line));
-       //         sqlStore.CommandTimeout = 180;
-       //         dbSCM.ExecuteCommand(sqlStore);
-
-
-
-       //         SqlCommand sqlSelectDaily = new SqlCommand();
-       //         sqlSelectDaily.CommandText = @"SELECT SUM(CAST(D18 As int)) as PlanQty
-       //                     FROM vi_WK_APS_PlanDailyReport 
-       //                     WHERE WCNO = @WCNO AND LineName = @LINE
-							//AND YM = @YM
-							// AND PID = @PID";
-       //         sqlSelectDaily.Parameters.Add(new SqlParameter("@WCNO", oScheman.wcno));
-       //         sqlSelectDaily.Parameters.Add(new SqlParameter("@LINE", oScheman.line));
-       //         sqlSelectDaily.Parameters.Add(new SqlParameter("@YM", dtNow.ToString("yyyyMM")));
-       //         sqlSelectDaily.Parameters.Add(new SqlParameter("@PID", pid));
-       //         DataTable dtDaily = dbSCM.Query(sqlSelectDaily);
-       //         if (dtDaily.Rows.Count > 0)
-       //         {
-       //             DailyQty = dtDaily.Rows[0]["PlanQty"].ToString();
-       //         }
-       //         // DEL TEMP 
-       //         SqlCommand sqlDelTempApsReport = new SqlCommand();
-       //         sqlDelTempApsReport.CommandText = @"DELETE  FROM vi_WK_APS_PlanDailyReport 
-       //                     WHERE  PID = @PID";
-       //         sqlDelTempApsReport.Parameters.Add(new SqlParameter("@PID", pid));
-       //         dbSCM.Query(sqlDelTempApsReport);
-       //         rPlan.Add(DailyQty);
-       //     }
-       //     rResult.Add(rPlan);
-
-           
-            return Ok();
+        [HttpPost]
+        [Route("/AddPointMP")]
+        public IActionResult AddPointMP([FromBody] ParamAddPointMP param)
+        {
+            Random rnd = new Random();
+            string layoutCode = param.layoutCode;
+            string objMasterID = param.objMasterID;
+            string empcode = param.empcode;
+            MpckObject newPoint = new MpckObject()
+            {
+                ObjCode = $"MP{DateTime.Now.ToString("yyyyMMdd")}{rnd.Next(0, 10000).ToString("D5")}",
+                EmpCode = empcode,
+                LayoutCode = layoutCode,
+                ObjMasterId = objMasterID,
+                ObjType = "MP",
+                ObjTitle = param.objTitle,
+                ObjSubtitle = param.objSubTitle,
+                ObjPath = "",
+                ObjX = 0,
+                ObjY = 0,
+                ObjStatus = "ACTIVE",
+                ObjInsertDt = DateTime.Now,
+                ObjWidth = 0,
+                ObjHeight = 0,
+                ObjBackgroundColor = "",
+                ObjBorderColor = "",
+                ObjBorderWidth = 1,
+                ObjFontColor = "",
+                ObjLastCheckDt = DateTime.Now,
+                ObjPosition = "OP",
+                ObjPicture = ""
+            };
+            //_contextSCM.MpckObjects.Add(newPoint);
+            int insert = _contextSCM.SaveChanges();
+            return Ok(new PropStatus()
+            {
+                status = insert > 0 ? true : false,
+                message = "",
+            });
         }
     }
 }

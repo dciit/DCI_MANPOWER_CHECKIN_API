@@ -1,1 +1,14 @@
-Scaffold-DbContext "Server=192.168.226.86;Database=dbSCM;TrustServerCertificate=True;uid=sa;password=decjapan" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -force -t  vi_APS_PartMaster -Context DBSCM  -ContextDir "Contexts"
+Scaffold-DbContext "Server=192.168.226.86;Database=dbSCM;TrustServerCertificate=True;uid=sa;password=decjapan" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -force -t  DCRunNbr,MPCK_CheckInLog,MPCK_Dictionary,MPCK_Layout,MPCK_Object,MPCK_Object_Master,SKC_DictMstr,SKC_LicenseTraining,vi_MPCK_CheckInOutLog,vi_MPCK_Dictionary,vi_MPCK_ObjectList,vi_APS_PartStock_SCR,vi_APS_PartMaster,APS_ProductionPlan,DictMstr,APS_ProductionPlan_Notice,WMS_MDW27_MODEL_MASTER,EKB_WIP_PART_STOCK_TRANSACTION,EKB_WIP_PART_STOCK,APS_ProductionPlan_Notify,PD_Backflush_FormulaData,APS_SUBLINE_STOCK_BALANCE,MPCK_Layout,vi_APS_PartStock_SCR_CASING_BODY,MPCK_Object,vi_MPCK_ObjectList,vi_APS_PartStock_SCR_CASING_BODY -Context DBSCM  -ContextDir "Contexts"
+
+// HRM
+Scaffold-DbContext "Server=192.168.226.86;Database=dbHRM;TrustServerCertificate=True;uid=sa;password=decjapan" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -force -t  DVCD_MSTR -Context DBHRM  -ContextDir "Contexts"
+
+// DBDCI COSTY
+Scaffold-DbContext "Server=192.168.226.145;Database=dbDCI;TrustServerCertificate=True;uid=sa;password=decjapan" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -force -t  Employee,LNS_Equipment,LNS_Equipment_Check_Log,LNS_Equipment_MASTER,LNS_Layout,TR_Line_Process,vi_TR_trainess_log,PD_Backflush_Data -Context DBDCI  -ContextDir "Contexts"
+
+// COSTY DBIOT
+Scaffold-DbContext "Server=COSTY;Database=dbIoT;TrustServerCertificate=True;uid=sa;password=decjapan" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -force -t  SCR_GasTight -Context COSTYIOT  -ContextDir "Contexts"
+
+Scaffold-DbContext "Server=192.168.226.86;Database=dbSCM;TrustServerCertificate=True;uid=sa;password=decjapan" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -force -t  DCRunNbr,MPCK_CheckInLog,MPCK_Dictionary,MPCK_Layout,MPCK_Object,MPCK_Object_Master,SKC_DictMstr,SKC_LicenseTraining,vi_MPCK_CheckInOutLog,vi_MPCK_Dictionary,vi_MPCK_ObjectList,sp_DCRunNbrDev -Context ManpowerContext  -ContextDir "Contexts"
+
+

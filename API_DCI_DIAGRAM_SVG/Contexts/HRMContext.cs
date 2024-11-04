@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
+﻿using Microsoft.EntityFrameworkCore;
 using API_DCI_DIAGRAM_SVG.Models;
 
 namespace API_DCI_DIAGRAM_SVG.Contexts
@@ -53,6 +50,11 @@ namespace API_DCI_DIAGRAM_SVG.Contexts
             modelBuilder.Entity<OtrqReq>(entity =>
             {
                 entity.HasKey(e => new { e.Odate, e.Rq, e.Code });
+            });
+
+            modelBuilder.Entity<Employee>(entity =>
+            {
+                entity.HasNoKey();
             });
 
             OnModelCreatingPartial(modelBuilder);
